@@ -25,3 +25,23 @@
 Шаблон промпта (в конец описания объекта):
 
 > Make it a cute collectible 3D vinyl art-toy miniature, without any sterilization pouches or packaging, slightly chunky softened designer-toy proportions, keeping the real shapes, colors and details. Material, lighting and presentation like the second image: glossy pearlescent vinyl with a soft iridescent sheen and shiny highlights, on a small round glossy pearlescent base, soft pastel diorama background with green grass, a calm lake, blue sky and little yellow flowers, official product photo.
+
+## Стиль общения
+
+- Отвечать коротко: «готово, вот файл, потрачено X кредитов». Без длинных пояснений.
+- Не просматривать каждую готовую картинку целиком — максимум маленькое превью, если нужно проверить.
+
+## Персонаж «Эмм» (памятка)
+
+Глянцевая перламутровая винил-фигурка (стиль «ортопоп»), фон — белый стоматологический кабинет, круглая радужная подставка.
+- Голова: белые колючие волосы-чёлка, светло-голубая хирургическая шапочка с узлом сзади, спокойное сонное лицо (мягкие тонкие брови, закрытые глаза с ресницами, румянец штрихами), толстая объёмная белая 3D-маска.
+- Тело: светло-голубая хирургичка (V-вырез, кармашек), голубые карго-штаны с завязками, голубые нитриловые перчатки, голубые кроксы с дырочками.
+- Пропорции: большая голова, тело ~2 головы (как на `ca490bba-d315-4133-b790-d3a6ca4fae8e`).
+
+Эталонные генерации Higgsfield (передавать как image_references):
+- Последняя Эмм (новая голова + поза с цветочком, ноги скрестно): `9ef316b5-4477-42fb-a115-03409b0a98a8`
+- Голова-эталон (кокон, HQ 2K): `7ad59d82-d553-4a68-be85-8fcedb7733b9`
+- Руки вниз, хирургичка оверсайз: `6794c30c-27dc-41ab-9158-e853df04a29c`
+- Поза с цветочком, старая голова (загрузка пользователя): `a752ecf0-13ba-4ad9-a960-c7ffad187cc5`
+- Кокон из брекетов без кроксов, исправленная чёлка: `f122846d-088b-4199-a1b1-15f49e8dc0a5`
+- Эталон стиля/пропорций Комуги: `90c19e20-ab1b-4ca5-bea9-ba987840a49c`
