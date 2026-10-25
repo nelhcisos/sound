@@ -30,6 +30,12 @@
 
 > Make it a cute collectible 3D vinyl art-toy miniature, without any sterilization pouches or packaging, slightly chunky softened designer-toy proportions, keeping the real shapes, colors and details. Material, lighting and presentation like the second image: glossy pearlescent vinyl with a soft iridescent sheen and shiny highlights, on a small round glossy pearlescent base, soft pastel diorama background with green grass, a calm lake, blue sky and little yellow flowers, official product photo.
 
+## Модели для печати
+
+- Вести таблицу `print/README.md`: превью | модель | STL.
+- Каждая модель — папка `print/<имя>/`: `preview.png` + `.stl`. Если персонаж из нескольких частей — все части в этой же папке (или одним общим `.stl`).
+- После добавления модели запускать `python3 print/update_table.py`, коммитить и пушить.
+
 ## Стиль общения
 
 - Сначала коротко ответить на вопрос / сказать, что собираюсь сделать, и только потом выполнять действия.
