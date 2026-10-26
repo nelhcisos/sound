@@ -17,7 +17,7 @@ def link(p: Path) -> str:
 
 
 rows = []
-for d in sorted(p for p in ROOT.iterdir() if p.is_dir() and not p.name.startswith(".")):
+for d in sorted(p for p in ROOT.iterdir() if p.is_dir() and not p.name.startswith(".") and p.name != "tools"):
     files = sorted(d.iterdir())
     previews = [f for f in files if f.suffix.lower() in PREVIEW_EXT]
     models = [f for f in files if f.suffix.lower() in MODEL_EXT]
