@@ -59,7 +59,7 @@ for c in range(1, 6):  # чистка шума
 
 hgt = r1 - r0
 rel = lambda r: (r - r0) / hgt  # 0 верх, 1 низ
-NAMES = ["hair", "glasses", "head", "jacket", "shirt", "arm_right", "hand", "mug",
+NAMES = ["hair", "glasses", "head", "jacket", "shirt", "arm_right", "hand", "mug", "eyes", "tie",
          "pants", "shoe_left", "shoe_right"]
 ID = {n: i + 1 for i, n in enumerate(NAMES)}
 L = np.zeros(im.shape[:2], np.uint8)
@@ -157,6 +157,116 @@ lab3[solid & (lab3 == 0)] = ID["jacket"]
 dext = ndimage.distance_transform_edt(solid) * P
 lab3[(lab3 == ID["hair"]) & (dext > 2.5)] = ID["head"]
 
+# ================= чистовая доводка границ =================
+NL = len(NAMES) + 1
+# 1) сглаживание всех границ (кроме слоёв, которые строим заново)
+sm_sig = 0.45 / P
+score = np.full(solid.shape, -1.0, np.float32); best_l = lab3.copy()
+for lid in range(1, NL):
+    mk = lab3 == lid
+    if not mk.any():
+        continue
+    sl = tuple(slice(max(a.min() - 8, 0), a.max() + 9) for a in np.nonzero(mk))
+    g = ndimage.gaussian_filter(mk[sl].astype(np.float32), sm_sig)
+    sc = score[sl]; bl = best_l[sl]
+    upd = g > sc
+    sc[upd] = g[upd]; bl[upd] = lid
+lab3 = np.where(solid, best_l, 0).astype(np.uint8)
+for lid in (ID["glasses"], ID["shirt"]):
+    lab3[lab3 == lid] = 0
+lab3[solid & (lab3 == 0)] = 0
+# дыры после снятия слоёв -> ближайшая метка
+miss = solid & (lab3 == 0)
+if miss.any():
+    ii = ndimage.distance_transform_edt(lab3 == 0, return_distances=False, return_indices=True)
+    lab3[miss] = lab3[ii[0][miss], ii[1][miss], ii[2][miss]]
+
+# 2) рельеф спереди: базовая поверхность и выступы
+hr = frontr.astype(float); hasf = frontr >= 0
+w = hasf.astype(float); hz = np.where(hasf, hr, 0)
+basef = ndimage.gaussian_filter(hz * w, 0.8 / P) / np.maximum(ndimage.gaussian_filter(w, 0.8 / P), 1e-6)
+prot = (hz - basef) * P
+def vox_layer(mask2d, dmax, base_embed=None):
+    """воксели первого слоя спереди в пределах mask2d (Y,Z)"""
+    if base_embed is None:
+        sel = (depth <= dmax)
+    else:  # всё, что выше базовой поверхности минус embed
+        sel = (xr >= (basef - base_embed / P)[None]) & (depth <= dmax)
+    return solid & first_run & mask2d[None] & sel
+
+# 3) очки по рельефу: компонента с «окнами» = оправа, бугорки в окнах = глаза
+G0 = ndimage.binary_dilation(L2 == ID["glasses"], iterations=int(2.0 / P))
+fr0 = G0 & (prot > 0.2) & hasf
+fr0 = ndimage.binary_closing(fr0, iterations=max(1, int(0.2 / P)))
+lb, n = ndimage.label(fr0)
+best_c, best_h = None, 0
+for j in range(1, n + 1):
+    c = lb == j
+    if c.sum() * P * P < 3:
+        continue
+    hole = (ndimage.binary_fill_holes(c) & ~c).sum()
+    if hole > best_h:
+        best_c, best_h = c, hole
+fr = best_c if best_c is not None else np.zeros_like(fr0)
+fr = ndimage.gaussian_filter(fr.astype(np.float32), 0.12 / P) > 0.5
+lens = ndimage.binary_fill_holes(fr) & ~fr
+lb, n = ndimage.label(lens)
+eyes2d = np.zeros_like(fr)
+yy, zz = np.mgrid[:fr.shape[0], :fr.shape[1]]
+if n:
+    sz = ndimage.sum(lens, lb, range(1, n + 1))
+    for j in np.argsort(sz)[::-1][:2]:
+        ln = lb == j + 1
+        if ln.sum() * P * P < 2:
+            continue
+        bump = ln & (prot > 0.15)
+        bl, bn = ndimage.label(bump)
+        if bn:
+            bs = ndimage.sum(bump, bl, range(1, bn + 1))
+            bmk = bl == 1 + int(np.argmax(bs))
+            cy, cz = np.argwhere(bmk).mean(0)
+            rad = np.sqrt(bmk.sum() / np.pi) * 1.08
+        else:
+            cy, cz = np.argwhere(ln).mean(0)
+            rad = 0.3 * min(np.ptp(np.nonzero(ln)[0]), np.ptp(np.nonzero(ln)[1]))
+        eyes2d |= ((yy - cy) ** 2 + (zz - cz) ** 2 <= rad ** 2) & ln
+gl = vox_layer(fr, 2.5, base_embed=0.35) & np.isin(lab3, [ID["head"], ID["hair"]])
+ey = vox_layer(eyes2d, 0.7) & (lab3 == ID["head"])
+lab3[gl] = ID["glasses"]; lab3[ey] = ID["eyes"]
+print("очки: %.1f мм², глаза: %.1f мм²" % (fr.sum() * P * P, eyes2d.sum() * P * P))
+
+# 4) ровная рубашка (V между лацканами) и галстук
+S0 = L2 == ID["shirt"]
+if S0.any():
+    zs_ = np.nonzero(S0.any(0))[0]
+    z_top, z_bot = zs_.max(), zs_.min()
+    top_rows = S0[:, z_top - int(1.0 / P): z_top + 1]
+    yc = np.nonzero(top_rows.any(1))[0].mean()
+    Wtop = float(np.clip(np.ptp(np.nonzero(top_rows.any(1))[0]) * P, 3.2, 4.2))
+    yy, zz = np.mgrid[:S0.shape[0], :S0.shape[1]]
+    dy = np.abs(yy - yc) * P            # мм от оси
+    zt = (z_top - zz) * P               # мм вниз от воротника
+    Ltot = (z_top - z_bot) * P - 0.2
+    vdepth = 0.45 * Ltot
+    V = (zt >= 0) & (zt <= vdepth) & (dy <= Wtop / 2 * (1 - zt / vdepth))
+    knot_h, tip_h = 1.6, 1.3
+    hw = np.full(S0.shape, -1.0)
+    k = (zt >= 0.15) & (zt < knot_h)
+    hw[k] = (2.0 - (2.0 - 1.4) * (zt[k] - 0.15) / (knot_h - 0.15)) / 2
+    b = (zt >= knot_h) & (zt < Ltot - tip_h)
+    hw[b] = (1.3 + (2.7 - 1.3) * (zt[b] - knot_h) / max(Ltot - tip_h - knot_h, 1e-3)) / 2
+    t = (zt >= Ltot - tip_h) & (zt <= Ltot)
+    hw[t] = 2.7 / 2 * (Ltot - zt[t]) / tip_h
+    TIE = dy <= hw
+    # узел чуть отделим от лезвия тонкой «складкой» — за счёт ширины уже видно
+    allow = np.isin(lab3, [ID["jacket"], ID["shirt"], ID["tie"]])
+    old_shirt = lab3 == ID["shirt"]
+    lab3[old_shirt] = ID["jacket"]
+    tv = vox_layer(TIE, 0.7) & allow
+    sv = vox_layer(V, 1.2) & allow & ~tv
+    lab3[sv] = ID["shirt"]; lab3[tv] = ID["tie"]
+    print("галстук: длина %.1f мм, рубашка V: %.1f×%.1f мм" % (Ltot, Wtop, vdepth))
+
 # обрывки -> к соседу: у каждой детали один цельный кусок
 for it in range(3):
     for lid in range(1, len(NAMES) + 1):
@@ -164,7 +274,7 @@ for it in range(3):
         if n <= 1:
             continue
         sz = ndimage.sum(lab3 == lid, lb, range(1, n + 1))
-        for j in np.argsort(sz)[::-1][1:]:
+        for j in np.argsort(sz)[::-1][(2 if NAMES[lid - 1] == "eyes" else 1):]:
             comp = lb == (j + 1)
             ring = ndimage.binary_dilation(comp, iterations=2) & solid & ~comp
             vals = lab3[ring]; vals = vals[(vals != lid) & (vals > 0)]
@@ -210,7 +320,7 @@ for i, a in enumerate(names):
         area = cont.sum() * P * P
         if area < 0.3:
             continue
-        if area < 8.0 or "glasses" in (a, b) or {a, b} == {"shoe_left", "shoe_right"}:
+        if area < 8.0 or {a, b} & {"glasses", "eyes", "tie", "shirt"} or {a, b} == {"shoe_left", "shoe_right"}:
             joints.append(dict(a=a, b=b, type="клей", area=round(area, 1)))
             continue
         cidx = np.argwhere(cont)

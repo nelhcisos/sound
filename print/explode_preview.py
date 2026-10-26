@@ -3,7 +3,7 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 D=sys.argv[1]; OUT=sys.argv[2]
-COL=dict(hair=(0.45,0.3,0.18),glasses=(0.2,0.2,0.22),head=(0.98,0.82,0.68),jacket=(0.25,0.25,0.32),
+COL=dict(eyes=(0.03,0.03,0.03),tie=(0.92,0.72,0.2),hair=(0.45,0.3,0.18),glasses=(0.2,0.2,0.22),head=(0.98,0.82,0.68),jacket=(0.25,0.25,0.32),
  shirt=(0.92,0.92,0.95),arm_right=(0.3,0.3,0.4),hand=(0.98,0.82,0.68),mug=(0.95,0.65,0.2),
  pants=(0.2,0.25,0.4),shoe_left=(0.12,0.12,0.12),shoe_right=(0.12,0.12,0.12))
 parts={}
@@ -21,7 +21,7 @@ for k,(ex,title) in enumerate([(0,'в сборе'),(0.9,'в разборе')]):
         d=m.centroid-c; d[2]*=1.3
         off=d*ex
         if n=='glasses': off=off+np.array([6,0,0])*ex
-        if n=='shirt': off=off+np.array([5,0,0])*ex
+        if n in ('shirt','tie','eyes'): off=off+np.array([5 if n!='tie' else 8,0,0])*ex
         if n in('hand','mug'): off=off+np.array([4,-2,0])*ex
         t=m.triangles+off; tris.append(t)
         sh=np.clip(m.face_normals@L,0,1)*0.65+0.35
