@@ -2,6 +2,6 @@
 
 | Превью | Модель | STL |
 |---|---|---|
-| — | пока пусто | — |
+| <img src="suit_guy_funko/preview.png" width="160"> | suit_guy_funko | [suit_guy_funko.stl](suit_guy_funko/suit_guy_funko.stl) |
 
 Как добавить: папка `print/<имя>/` → `preview.png` + `.stl` (части одного персонажа — в той же папке), затем `python3 print/update_table.py`.
