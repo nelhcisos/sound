@@ -152,6 +152,9 @@ for p, nm in enumerate(PARTS):
     v, fc, _, _ = measure.marching_cubes(f, 0.5)
     v = (v - 2) * PITCH + org
     mesh = trimesh.Trimesh(v, fc)
+    parts_ = mesh.split(only_watertight=False)
+    if len(parts_) > 1:  # убираем крошки
+        mesh = max(parts_, key=lambda q: abs(q.volume))
     mesh.fix_normals()
     fn = out / f"{name}_{p + 1}_{nm}.stl"
     mesh.export(fn)
