@@ -5,7 +5,11 @@ from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 D=sys.argv[1]; OUT=sys.argv[2]
 COL=dict(eyes=(0.03,0.03,0.03),tie=(0.92,0.72,0.2),hair=(0.45,0.3,0.18),glasses=(0.2,0.2,0.22),head=(0.98,0.82,0.68),jacket=(0.25,0.25,0.32),
  shirt=(0.92,0.92,0.95),arm_right=(0.3,0.3,0.4),hand=(0.98,0.82,0.68),mug=(0.95,0.65,0.2),
- pants=(0.2,0.25,0.4),shoe_left=(0.12,0.12,0.12),shoe_right=(0.12,0.12,0.12))
+ pants=(0.2,0.25,0.4),shoe_left=(0.12,0.12,0.12),shoe_right=(0.12,0.12,0.12),
+ platform=(0.9,0.9,0.95),pant_left=(0.22,0.22,0.27),pant_right=(0.28,0.28,0.34),body=(0.16,0.16,0.2),
+ sleeve_left=(0.3,0.3,0.36),sleeve_right=(0.34,0.34,0.4),hands=(0.98,0.82,0.68),neck=(0.95,0.78,0.64))
+import os
+if os.environ.get('HAIR'): COL['hair']=tuple(float(x) for x in os.environ['HAIR'].split(','))
 parts={}
 for f in sorted(glob.glob(D+'/*.stl')):
     n=os.path.basename(f)[:-4]; m=trimesh.load(f)
