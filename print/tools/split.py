@@ -1,5 +1,9 @@
-"""Разрезка фигурки на цветные детали по разметке спереди + штыри/гнёзда + полость.
-usage: python3 split.py model.glb annot.jpg outdir [height_mm=40]
+"""Шаг 1 «разборки»: нарезка фигурки на цветные детали по разметке спереди.
+usage: python3 split.py model.glb annot.jpg outdir
+Все «художественные» размеры заданы в мм для эталонной фигурки высотой 40 мм.
+Сетка по умолчанию 0,04 мм на эталоне = 0,1 мм на мастер-модели 10 см.
+Результат: outdir/labels.npz (метки вокселей) и outdir/master_100mm/*.stl (детали без штырей).
+Шаг 2 — finalize.py: итоговый размер, штыри/гнёзда, полости.
 """
 import sys, os, json
 import numpy as np
@@ -9,10 +13,9 @@ from scipy import ndimage
 from skimage import measure, color
 
 SRC, ANNOT, OUT = sys.argv[1], sys.argv[2], sys.argv[3]
-H = float(sys.argv[4]) if len(sys.argv) > 4 else 40.0
-P = float(os.environ.get("PITCH", 0.1))  # мм на воксель
-WALL = 1.2         # стенка полых деталей
-CLEAR = 0.15       # радиальный зазор штырь/гнездо
+H = 40.0                                     # эталонная высота для художественных размеров
+P = float(os.environ.get("PITCH", 0.04))     # мм эталона на воксель (0,04 = 0,1 мм на 10 см)
+MASTER = float(os.environ.get("MASTER", 100.0))
 os.makedirs(OUT, exist_ok=True)
 mm = lambda v: int(round(v / P))
 
@@ -23,10 +26,11 @@ m.apply_transform(trimesh.transformations.rotation_matrix(np.pi / 2, [1, 0, 0]))
 m.apply_scale(H / m.extents[2])
 m.apply_translation([-m.centroid[0], -m.centroid[1], -m.bounds[0][2]])
 vox = m.voxelized(P)
-D = 6
+D = max(2, int(round(0.6 / P)))
 g = np.pad(vox.matrix, D + 2)
-f = ndimage.binary_fill_holes(ndimage.binary_dilation(g, iterations=D))
-solid = ndimage.binary_erosion(f, iterations=D) | (g & f)
+f = ndimage.binary_fill_holes(ndimage.distance_transform_edt(~g) <= D)
+solid = (ndimage.distance_transform_edt(f) > D) | (g & f)
+del f
 pad = 3
 solid = np.pad(solid[D + 2:-(D + 2), D + 2:-(D + 2), D + 2:-(D + 2)], pad)
 origin = vox.translation - pad * P
@@ -129,11 +133,11 @@ xs = np.arange(NX)[:, None, None]
 xr = xs if FRONT > 0 else (NX - 1 - xs)  # «вперёд» = рост xr
 sol_r = solid if FRONT > 0 else solid[::-1]
 frontr = np.where(sol_r.any(0), NX - 1 - np.argmax(sol_r[::-1], axis=0), -1)
-depth = (frontr[None] - xr) * P  # мм от передней поверхности
+depth = ((frontr[None] - xr) * P).astype(np.float32)  # мм от передней поверхности
 # первая сплошная полоса от фронта
 first_run = np.zeros_like(solid)
 rr = sol_r.copy()
-cum = np.cumsum(~rr[::-1], axis=0)[::-1]  # число пустот впереди (в осях xr)
+cum = np.cumsum(~rr[::-1], axis=0, dtype=np.int16)[::-1]  # число пустот впереди (в осях xr)
 gaps_ahead = cum - (~rr)
 first_run_r = rr & (gaps_ahead == (NX - 1 - frontr)[None])
 first_run = first_run_r if FRONT > 0 else first_run_r[::-1]
@@ -154,7 +158,7 @@ if hd.any():
     zz = np.arange(NZ)[None, None, :]
     lab3[hd & back & (zz >= zcut)] = ID["hair"]
 lab3[solid & (lab3 == 0)] = ID["jacket"]
-dext = ndimage.distance_transform_edt(solid) * P
+dext = (ndimage.distance_transform_edt(solid) * P).astype(np.float32)
 lab3[(lab3 == ID["hair"]) & (dext > 2.5)] = ID["head"]
 
 # ================= чистовая доводка границ =================
@@ -274,146 +278,34 @@ for it in range(3):
         if n <= 1:
             continue
         sz = ndimage.sum(lab3 == lid, lb, range(1, n + 1))
+        allobj = ndimage.find_objects(lb)
         for j in np.argsort(sz)[::-1][(2 if NAMES[lid - 1] == "eyes" else 1):]:
-            comp = lb == (j + 1)
-            ring = ndimage.binary_dilation(comp, iterations=2) & solid & ~comp
-            vals = lab3[ring]; vals = vals[(vals != lid) & (vals > 0)]
+            bb = tuple(slice(max(o.start - 3, 0), o.stop + 3) for o in allobj[j])
+            comp = lb[bb] == (j + 1)
+            ring = ndimage.binary_dilation(comp, iterations=2) & solid[bb] & ~comp
+            vals = lab3[bb][ring]; vals = vals[(vals != lid) & (vals > 0)]
             if len(vals):
-                lab3[comp] = np.bincount(vals).argmax()
+                lab3[bb][comp] = np.bincount(vals).argmax()
+np.savez_compressed(os.path.join(OUT, "labels.npz"), lab=lab3, origin=origin, pitch=P,
+                    ref_height=H, names=np.array(NAMES))
 np.save(os.path.join(OUT, "_lab3.npy"), lab3)
-if os.environ.get("LABELS_ONLY"): sys.exit(0)
-parts = {n: lab3 == ID[n] for n in NAMES if (lab3 == ID[n]).sum() * P**3 > 1.0}
-for n, mk in parts.items():
-    print("%-11s %6.1f мм³" % (n, mk.sum() * P**3))
+if os.environ.get("LABELS_ONLY"):
+    sys.exit(0)
 
-# ---------- стыки ----------
-def bbox(mk, marg):
-    w = np.nonzero(mk)
-    return tuple(slice(max(a.min() - marg, 0), a.max() + marg + 1) for a in w)
-
-def cyl(center, axis, r, t0, t1, shape):
-    c = np.asarray(center, float); a = np.asarray(axis, float) / np.linalg.norm(axis)
-    R = mm(max(abs(t0), abs(t1)) + r) + 2
-    sl = tuple(slice(max(int(c[i]) - R, 0), min(int(c[i]) + R + 1, shape[i])) for i in range(3))
-    g = np.mgrid[sl].reshape(3, -1).T - c
-    t = g @ a * P
-    rad = np.linalg.norm(g - np.outer(g @ a, a), axis=1) * P
-    ok = (t >= t0) & (t <= t1) & (rad <= r)
-    out = np.zeros(shape, bool)
-    out[sl] = ok.reshape(tuple(s.stop - s.start for s in sl))
-    return out
-
-names = list(parts)
-add = {n: np.zeros_like(solid) for n in names}   # сплошные добавки (анкер/втулка/штырь)
-cut = {n: np.zeros_like(solid) for n in names}   # гнёзда
-joints = []
-offs = [(1, 0, 0), (-1, 0, 0), (0, 1, 0), (0, -1, 0), (0, 0, 1), (0, 0, -1)]
-for i, a in enumerate(names):
-    for b in names[i + 1:]:
-        A, Bm = parts[a], parts[b]
-        cont = np.zeros_like(solid); dirs = np.zeros(solid.shape + (3,), np.int8)
-        for o in offs:
-            sh = np.roll(Bm, shift=tuple(-x for x in o), axis=(0, 1, 2))
-            hit = A & sh
-            cont |= hit
-            dirs[hit] += np.array(o, np.int8)
-        area = cont.sum() * P * P
-        if area < 0.3:
-            continue
-        if area < 8.0 or {a, b} & {"glasses", "eyes", "tie", "shirt"} or {a, b} == {"shoe_left", "shoe_right"}:
-            joints.append(dict(a=a, b=b, type="клей", area=round(area, 1)))
-            continue
-        cidx = np.argwhere(cont)
-        score = dext[tuple(cidx.T)]
-        j = int(np.argmax(score))
-        r = min(1.0, score[j] - 0.9)
-        if r < 0.45:
-            joints.append(dict(a=a, b=b, type="клей", area=round(area, 1)))
-            continue
-        p0 = cidx[j].astype(float)
-        near = np.linalg.norm(cidx - p0, axis=1) < mm(2.5)
-        nab = dirs[tuple(cidx[near].T)].sum(0).astype(float)  # из a в b
-        if np.linalg.norm(nab) == 0:
-            continue
-        nab /= np.linalg.norm(nab)
-        pa = p0 + 0.5 * nab  # точка на границе a|b
-        def room(part, start, n):
-            for tt in np.arange(0.2, 3.01, 0.1):
-                q = np.round(start + n * tt / P).astype(int)
-                if (q < 0).any() or (q >= solid.shape).any() or not parts[part][tuple(q)]:
-                    return tt
-            return 3.0
-        ra, rb = room(a, pa, -nab), room(b, pa, nab)
-        # штырь растёт из детали с меньшим запасом в деталь с большим
-        if rb >= ra:
-            small, big, nvec, Lroom = a, b, nab, rb
-        else:
-            small, big, nvec, Lroom = b, a, -nab, ra
-        Lp = min(2.0, Lroom - 0.9)
-        if Lp < 1.0:
-            joints.append(dict(a=a, b=b, type="клей", area=round(area, 1)))
-            continue
-        p = pa
-        peg = cyl(p, nvec, r, -0.05, Lp, solid.shape)
-        anchor = cyl(p, nvec, r + 0.8, -1.5, 0.0, solid.shape) & parts[small]
-        sleeve = cyl(p, nvec, r + 0.8, 0.0, Lp + 1.0, solid.shape) & parts[big]
-        sock = cyl(p, nvec, r + CLEAR, -0.1, Lp + 0.2, solid.shape)
-        add[small] |= peg | anchor
-        add[big] |= sleeve
-        cut[big] |= sock
-        joints.append(dict(a=small, b=big, type="штырь", d=round(2 * r, 1), L=round(Lp, 1),
-                           area=round(area, 1)))
-        print("стык %s -> %s: штырь Ø%.1f×%.1f мм" % (small, big, 2 * r, Lp))
-
-# ---------- полости и сборка деталей ----------
-final = {}
-for n in names:
-    mk = parts[n]
-    solidp = mk | add[n]
-    hol = ""
-    if mk.sum() * P**3 > 80:
-        cav = ndimage.binary_erosion(mk, iterations=mm(WALL))
-        cav &= ~ndimage.binary_dilation(add[n] | cut[n], iterations=mm(0.8))
-        lb, k = ndimage.label(cav)
-        if k:
-            sz = ndimage.sum(cav, lb, range(1, k + 1))
-            cav = lb == (1 + np.argmax(sz))
-            if cav.sum() * P**3 > 20:
-                # слив: вниз от нижней точки полости, подальше от штырей
-                zc = np.nonzero(cav.any((0, 1)))[0][0]
-                cand = np.argwhere(cav[:, :, zc: zc + 3].any(2))
-                far = ndimage.distance_transform_edt(~(add[n] | cut[n]))[:, :, zc]
-                sc = far[tuple(cand.T)] - 0.05 * np.linalg.norm(cand - cand.mean(0), axis=1)
-                cx, cy = cand[np.argmax(sc)]
-                X, Y = np.ogrid[:NX, :NY]
-                disk = (X - cx) ** 2 + (Y - cy) ** 2 <= mm(0.75) ** 2
-                drain = np.zeros_like(solid); drain[:, :, : zc + 1] = disk[:, :, None]
-                solidp = (solidp & ~cav) & ~(drain & ~add[n])
-                hol = "полая, %.0f мм³ полость" % (cav.sum() * P**3)
-    solidp &= ~cut[n]
-    final[n] = (solidp, hol)
-
-COL = dict(hair=(0.35, 0.25, 0.15), glasses=(0.15, 0.15, 0.15), head=(0.95, 0.8, 0.65),
-           jacket=(0.15, 0.15, 0.2), shirt=(0.9, 0.9, 0.9), arm_right=(0.15, 0.15, 0.2),
-           hand=(0.95, 0.8, 0.65), mug=(0.85, 0.55, 0.2), pants=(0.15, 0.15, 0.2),
-           shoe_left=(0.05, 0.05, 0.05), shoe_right=(0.05, 0.05, 0.05))
-info = []
-for n, (mk, hol) in final.items():
-    sl = bbox(mk, 3)
-    sub = np.pad(mk[sl], 1).astype(np.float32)
-    fld = ndimage.gaussian_filter(sub, 0.6)
-    v, fc, _, _ = measure.marching_cubes(fld, 0.5)
-    v = (v - 1 + [s.start for s in sl]) * P + origin
+# ---------- мастер-детали 10 см (без штырей и полостей) ----------
+k = MASTER / H
+md = os.path.join(OUT, "master_%dmm" % MASTER)
+os.makedirs(md, exist_ok=True)
+for lid, n in enumerate(NAMES, 1):
+    w = np.nonzero(lab3 == lid)
+    if len(w[0]) * P**3 < 1.0:
+        continue
+    sl = tuple(slice(max(a.min() - 3, 0), a.max() + 4) for a in w)
+    sub = np.pad(lab3[sl] == lid, 1).astype(np.float32)
+    v, fc, _, _ = measure.marching_cubes(ndimage.gaussian_filter(sub, 0.6), 0.5)
+    v = ((v - 1 + [q.start for q in sl]) * P + origin) * k
     t = trimesh.Trimesh(v, fc, process=True)
     if t.volume < 0:
         t.invert()
-    t.export(os.path.join(OUT, f"{n}.stl"))
-    info.append(dict(part=n, mm=t.extents.round(1).tolist(), vol=round(t.volume, 1),
-                     watertight=bool(t.is_watertight), bodies=len(t.split(only_watertight=False)),
-                     hollow=hol))
-    print("%-11s %s объём %.0f мм³ тел=%d %s %s" % (n, t.extents.round(1), t.volume,
-          info[-1]["bodies"], "ok" if t.is_watertight else "НЕ ЗАМКНУТА", hol))
-json.dump(dict(parts=info, joints=joints), open(os.path.join(OUT, "parts.json"), "w"),
-          ensure_ascii=False, indent=1)
-np.save(os.path.join(OUT, "_labels_front.npy"), L2)
-np.save(os.path.join(OUT, "_lab3.npy"), lab3)
+    t.export(os.path.join(md, n + ".stl"))
+    print("мастер %-11s %s мм" % (n, t.extents.round(1)))
