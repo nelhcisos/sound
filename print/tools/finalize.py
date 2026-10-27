@@ -18,6 +18,7 @@ WALL = float(os.environ.get("WALL", 1.2))
 PEG = float(os.environ.get("PEG", 2.0))
 GLUE = set(os.environ.get("GLUE", "glasses,eyes,tie,shirt").split(","))
 # PEGS="a-b,c-d": штыри только на этих стыках, остальные — клей (по умолчанию все крупные)
+ONLY = set(x for x in os.environ.get("ONLY", "").split(",") if x)  # обработать только эти детали (экономия памяти)
 PEGS = {frozenset(x.split("-")) for x in os.environ.get("PEGS", "").split(",") if "-" in x}
 os.makedirs(OUT, exist_ok=True)
 
@@ -132,6 +133,8 @@ import gc; gc.collect()
 # ---------- детали: полость, слив, экспорт ----------
 info = []
 for n in present:
+    if ONLY and n not in ONLY:
+        continue
     # рамка детали с запасом под штыри
     b0 = bbox[n]
     lo = [s.start for s in b0]; hi = [s.stop for s in b0]
@@ -195,5 +198,6 @@ for n in present:
                      watertight=bool(t.is_watertight), bodies=len(keep), hollow=hol))
     print("%-11s %s объём %.0f мм³ тел=%d %s %s" % (n, t.extents.round(1), t.volume, len(keep),
           "ok" if t.is_watertight else "НЕ ЗАМКНУТА", hol))
+jn = "parts.json" if not ONLY else "parts_%s.json" % "_".join(sorted(ONLY))
 json.dump(dict(height=HF, voxel_mm=P, clear=CLEAR, wall=WALL, parts=info, joints=joints),
-          open(os.path.join(OUT, "parts.json"), "w"), ensure_ascii=False, indent=1)
+          open(os.path.join(OUT, jn), "w"), ensure_ascii=False, indent=1)
