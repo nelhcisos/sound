@@ -17,6 +17,8 @@ CLEAR = float(os.environ.get("CLEAR", 0.15))
 WALL = float(os.environ.get("WALL", 1.2))
 PEG = float(os.environ.get("PEG", 2.0))
 GLUE = set(os.environ.get("GLUE", "glasses,eyes,tie,shirt").split(","))
+# PEGS="a-b,c-d": штыри только на этих стыках, остальные — клей (по умолчанию все крупные)
+PEGS = {frozenset(x.split("-")) for x in os.environ.get("PEGS", "").split(",") if "-" in x}
 os.makedirs(OUT, exist_ok=True)
 
 d = np.load(SRC)
@@ -84,7 +86,7 @@ for (ia, ib), lst in sorted(pairs.items()):
     area = len(cidx) * P * P
     if area < 0.3:
         continue
-    if area < 8.0 or {a, b} & GLUE or {a, b} == {"shoe_left", "shoe_right"}:
+    if area < 8.0 or {a, b} & GLUE or {a, b} == {"shoe_left", "shoe_right"} or (PEGS and frozenset((a, b)) not in PEGS):
         joints.append(dict(a=a, b=b, type="клей", area=round(area, 1)))
         continue
     de = get_dext()
@@ -124,6 +126,8 @@ for (ia, ib), lst in sorted(pairs.items()):
                        area=round(area, 1)))
     print("стык %s -> %s: штырь Ø%.1f×%.1f мм" % (small, big, 2 * r, Lp))
 dext = None
+del pairs
+import gc; gc.collect()
 
 # ---------- детали: полость, слив, экспорт ----------
 info = []
