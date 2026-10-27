@@ -127,7 +127,7 @@ for ch, par in PARENT.items():
         n = -n
     face = np.zeros_like(cm); face[tuple(fp.T)] = True
     # глубина точки стыка = расстояние до внешней поверхности
-    dall = ndimage.distance_transform_edt(cm | pm)
+    dall = ndimage.distance_transform_edt(np.pad(cm | pm, 2))[2:-2, 2:-2, 2:-2]
     score = dall[tuple(fp.T)]
     best = fp[np.argmax(score)].astype(float)
     r = min(R_MAX / PITCH, score.max() * 0.6)
@@ -180,7 +180,8 @@ if HOLLOW:
         sl = tuple(slice(a, b) for a, b in zip(lo, hi))
         W, K = lab[sl], keep[sl]
         mk = W == p
-        core = ndimage.distance_transform_edt(mk) > CORE / PITCH
+        P_ = 2  # поля из воздуха: край сетки тоже считается поверхностью
+        core = ndimage.distance_transform_edt(np.pad(mk, P_))[P_:-P_, P_:-P_, P_:-P_] > CORE / PITCH
         if not core.any():
             continue
         cav = (ndimage.distance_transform_edt(~core) <= (CORE - WALL) / PITCH) & mk & ~K
