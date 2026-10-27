@@ -58,7 +58,7 @@ dext = None
 def get_dext():
     global dext
     if dext is None:
-        dext = (ndimage.distance_transform_edt(solid) * P).astype(np.float32)
+        dext = ndimage.distance_transform_edt(solid[::2, ::2, ::2]).astype(np.float32) * (P * 2)
     return dext
 
 def cyl(center, axis, r, t0, t1):
@@ -88,7 +88,7 @@ for (ia, ib), lst in sorted(pairs.items()):
         joints.append(dict(a=a, b=b, type="клей", area=round(area, 1)))
         continue
     de = get_dext()
-    score = de[tuple(cidx.T)]
+    score = de[tuple((cidx // 2).T)]
     j = int(np.argmax(score))
     r = float(min(PEG / 2, score[j] - 0.9))
     if r < 0.45:

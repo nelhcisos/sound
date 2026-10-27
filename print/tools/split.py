@@ -28,8 +28,8 @@ m.apply_translation([-m.centroid[0], -m.centroid[1], -m.bounds[0][2]])
 vox = m.voxelized(P)
 D = max(2, int(round(0.6 / P)))
 g = np.pad(vox.matrix, D + 2)
-f = ndimage.binary_fill_holes(ndimage.distance_transform_edt(~g) <= D)
-solid = (ndimage.distance_transform_edt(f) > D) | (g & f)
+f = ndimage.binary_fill_holes(ndimage.binary_dilation(g, iterations=D))
+solid = ndimage.binary_erosion(f, iterations=D) | (g & f)
 del f
 pad = 3
 solid = np.pad(solid[D + 2:-(D + 2), D + 2:-(D + 2), D + 2:-(D + 2)], pad)
@@ -158,8 +158,18 @@ if hd.any():
     zz = np.arange(NZ)[None, None, :]
     lab3[hd & back & (zz >= zcut)] = ID["hair"]
 lab3[solid & (lab3 == 0)] = ID["jacket"]
-dext = (ndimage.distance_transform_edt(solid) * P).astype(np.float32)
-lab3[(lab3 == ID["hair"]) & (dext > 2.5)] = ID["head"]
+def coarse_edt(mask, f=2):
+    """расстояние до наружной поверхности на прореженной сетке (экономия памяти)"""
+    c = ndimage.distance_transform_edt(mask[::f, ::f, ::f]).astype(np.float32) * (P * f)
+    return c
+_dc = coarse_edt(solid)
+def dext_at(sel):
+    w = np.nonzero(sel)
+    return w, _dc[w[0] // 2, w[1] // 2, w[2] // 2]
+_w, _d = dext_at(lab3 == ID["hair"])
+_k = _d > 2.5
+lab3[_w[0][_k], _w[1][_k], _w[2][_k]] = ID["head"]
+del _w, _d, _k, _dc
 
 # ================= чистовая доводка границ =================
 NL = len(NAMES) + 1
@@ -181,9 +191,15 @@ for lid in (ID["glasses"], ID["shirt"]):
 lab3[solid & (lab3 == 0)] = 0
 # дыры после снятия слоёв -> ближайшая метка
 miss = solid & (lab3 == 0)
-if miss.any():
-    ii = ndimage.distance_transform_edt(lab3 == 0, return_distances=False, return_indices=True)
-    lab3[miss] = lab3[ii[0][miss], ii[1][miss], ii[2][miss]]
+while miss.any():  # наращиваем соседние метки внутрь дыр
+    w = np.nonzero(miss)
+    bb = tuple(slice(max(a.min() - 2, 0), a.max() + 3) for a in w)
+    grown = ndimage.grey_dilation(lab3[bb], size=3)
+    fill = miss[bb] & (grown > 0)
+    if not fill.any():
+        break
+    lab3[bb][fill] = grown[fill]
+    miss = solid & (lab3 == 0)
 
 # 2) рельеф спереди: базовая поверхность и выступы
 hr = frontr.astype(float); hasf = frontr >= 0
