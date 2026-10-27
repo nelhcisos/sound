@@ -1,5 +1,5 @@
 """Разборка по объёму по меткам граней (цветным областям).
-usage: python3 split_by_labels.py in.glb labels.npy out_dir name height_mm base_cut_mm
+usage: python3 split_by_labels.py in.glb labels.npy out_dir name height_mm base_cut_mm [head_cut_mm]
 labels.npy — метка на каждую грань (после merge_vertices), см. порядок PARTS.
 Каждый воксель внутри модели получает метку ближайшей поверхности,
 подставка отрезается плоскостью base_cut_mm. На каждом стыке — штифт
@@ -15,6 +15,7 @@ from skimage import measure
 
 src, lab_f, out, name = sys.argv[1], sys.argv[2], Path(sys.argv[3]), sys.argv[4]
 H, BASE = float(sys.argv[5]), float(sys.argv[6])
+HEAD = float(sys.argv[7]) if len(sys.argv) > 7 else None  # тело выше этой высоты -> голова
 PARTS = ["podstavka", "botinki", "telo", "uzel", "golova", "ruka_prav", "ruka_lev", "hvost"]
 PARENT = {1: 0, 2: 1, 3: 2, 4: 2, 5: 2, 6: 2, 7: 2}
 PITCH, GAP = 0.1, 0.15
@@ -83,6 +84,15 @@ if CACHE.exists():
 else:
     lab, solid, org, zc = compute_labels()
     np.savez(CACHE, lab=lab, solid=solid, org=org, zc=zc)
+if HEAD is not None:
+    zh = int(round((HEAD - org[2]) / PITCH))
+    t_ = lab[:, :, zh:]; t_[t_ == 2] = 4
+    # оторванные от тела куски головы ниже плоскости остаются головой; убираем обрывки тела
+    cc, k = ndimage.label(lab == 2)
+    if k > 1:
+        sz = ndimage.sum(np.ones_like(cc), cc, range(1, k + 1))
+        lab[(cc > 0) & (cc != 1 + int(np.argmax(sz)))] = 4
+    print('голова отрезана плоскостью', HEAD, flush=True)
 
 # штифты (считаем в окне вокруг стыка)
 for ch, par in PARENT.items():
