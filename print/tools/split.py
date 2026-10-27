@@ -25,9 +25,29 @@ m = s.to_geometry() if hasattr(s, "to_geometry") else s.dump(concatenate=True)
 m.apply_transform(trimesh.transformations.rotation_matrix(np.pi / 2, [1, 0, 0]))
 m.apply_scale(H / m.extents[2])
 m.apply_translation([-m.centroid[0], -m.centroid[1], -m.bounds[0][2]])
-vox = m.voxelized(P)
+# лёгкая вокселизация: густые точки по поверхности порциями
+lo3 = m.bounds[0] - P
+shape3 = np.ceil((m.bounds[1] - m.bounds[0]) / P).astype(int) + 3
+surf = np.zeros(shape3, bool)
+tri = m.triangles
+areas = m.area_faces
+for i0 in range(0, len(tri), 200000):
+    t = tri[i0:i0 + 200000]; ar = areas[i0:i0 + 200000]
+    n = np.maximum(1, np.ceil(ar / (P * 0.5) ** 2).astype(int))
+    reps = np.repeat(np.arange(len(t)), n)
+    u = np.random.rand(len(reps), 2)
+    flip = u.sum(1) > 1
+    u[flip] = 1 - u[flip]
+    tt = t[reps]
+    pts = tt[:, 0] + u[:, :1] * (tt[:, 1] - tt[:, 0]) + u[:, 1:] * (tt[:, 2] - tt[:, 0])
+    ij = np.floor((pts - lo3) / P).astype(np.int32)
+    surf[ij[:, 0], ij[:, 1], ij[:, 2]] = True
+    # вершины тоже
+del tri, areas
+class _V: pass
+vox = _V(); vox.translation = lo3 + P / 2
 D = max(2, int(round(0.6 / P)))
-g = np.pad(vox.matrix, D + 2)
+g = np.pad(surf, D + 2); del surf
 f = ndimage.binary_fill_holes(ndimage.binary_dilation(g, iterations=D))
 solid = ndimage.binary_erosion(f, iterations=D) | (g & f)
 del f
