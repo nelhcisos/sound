@@ -50,7 +50,7 @@ D = max(2, int(round(0.6 / P)))
 g = np.pad(surf, D + 2); del surf
 f = ndimage.binary_fill_holes(ndimage.binary_dilation(g, iterations=D))
 solid = ndimage.binary_erosion(f, iterations=D) | (g & f)
-del f
+del f, g
 pad = 3
 solid = np.pad(solid[D + 2:-(D + 2), D + 2:-(D + 2), D + 2:-(D + 2)], pad)
 origin = vox.translation - pad * P
@@ -161,6 +161,7 @@ cum = np.cumsum(~rr[::-1], axis=0, dtype=np.int16)[::-1]  # число пуст�
 gaps_ahead = cum - (~rr)
 first_run_r = rr & (gaps_ahead == (NX - 1 - frontr)[None])
 first_run = first_run_r if FRONT > 0 else first_run_r[::-1]
+del cum, gaps_ahead, rr
 
 lab3 = np.where(solid, L2[None], 0).astype(np.uint8)
 for lid, cap in LAYER.items():
@@ -206,6 +207,7 @@ for lid in range(1, NL):
     upd = g > sc
     sc[upd] = g[upd]; bl[upd] = lid
 lab3 = np.where(solid, best_l, 0).astype(np.uint8)
+del score, best_l
 for lid in (ID["glasses"], ID["shirt"]):
     lab3[lab3 == lid] = 0
 lab3[solid & (lab3 == 0)] = 0
@@ -307,11 +309,15 @@ if S0.any():
     lab3[sv] = ID["shirt"]; lab3[tv] = ID["tie"]
     print("галстук: длина %.1f мм, рубашка V: %.1f×%.1f мм" % (Ltot, Wtop, vdepth))
 
+# большие промежуточные массивы больше не нужны
+del depth, first_run, first_run_r, sol_r
+import gc; gc.collect()
 # обрывки -> к соседу: у каждой детали один цельный кусок
 for it in range(3):
     for lid in range(1, len(NAMES) + 1):
         lb, n = ndimage.label(lab3 == lid)
         if n <= 1:
+            del lb
             continue
         sz = ndimage.sum(lab3 == lid, lb, range(1, n + 1))
         allobj = ndimage.find_objects(lb)
