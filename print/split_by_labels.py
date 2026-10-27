@@ -1,5 +1,5 @@
 """Разборка по объёму по меткам граней (цветным областям).
-usage: python3 split_by_labels.py in.glb labels.npy out_dir name height_mm base_cut_mm [head_cut_mm]
+usage: python3 split_by_labels.py in.glb labels.npy out_dir name height_mm base_cut_mm [head_cut_mm] [config.json]
 labels.npy — метка на каждую грань (после merge_vertices), см. порядок PARTS.
 Каждый воксель внутри модели получает метку ближайшей поверхности,
 подставка отрезается плоскостью base_cut_mm. На каждом стыке — штифт
@@ -18,6 +18,13 @@ H, BASE = float(sys.argv[5]), float(sys.argv[6])
 HEAD = float(sys.argv[7]) if len(sys.argv) > 7 else None  # тело выше этой высоты -> голова
 PARTS = ["podstavka", "botinki", "telo", "uzel", "golova", "ruka_prav", "ruka_lev", "hvost"]
 PARENT = {1: 0, 2: 1, 3: 2, 4: 2, 5: 2, 6: 2, 7: 2}
+HEAD_FROM, HEAD_TO = 2, 4
+if len(sys.argv) > 8:  # config.json: {"parts": [...], "parent": {"child": parent}, "head_from": i, "head_to": j}
+    import json
+    cfg = json.load(open(sys.argv[8]))
+    PARTS = cfg["parts"]
+    PARENT = {int(k): v for k, v in cfg["parent"].items()}
+    HEAD_FROM, HEAD_TO = cfg.get("head_from", 2), cfg.get("head_to", 4)
 PITCH, GAP = 0.1, 0.15
 R_MAX, L_MAX, R_MIN = 2.5, 3.0, 0.6
 out.mkdir(parents=True, exist_ok=True)
@@ -86,12 +93,12 @@ else:
     np.savez(CACHE, lab=lab, solid=solid, org=org, zc=zc)
 if HEAD is not None:
     zh = int(round((HEAD - org[2]) / PITCH))
-    t_ = lab[:, :, zh:]; t_[t_ == 2] = 4
+    t_ = lab[:, :, zh:]; t_[t_ == HEAD_FROM] = HEAD_TO
     # оторванные от тела куски головы ниже плоскости остаются головой; убираем обрывки тела
-    cc, k = ndimage.label(lab == 2)
+    cc, k = ndimage.label(lab == HEAD_FROM)
     if k > 1:
         sz = ndimage.sum(np.ones_like(cc), cc, range(1, k + 1))
-        lab[(cc > 0) & (cc != 1 + int(np.argmax(sz)))] = 4
+        lab[(cc > 0) & (cc != 1 + int(np.argmax(sz)))] = HEAD_TO
     print('голова отрезана плоскостью', HEAD, flush=True)
 
 # штифты (считаем в окне вокруг стыка)
