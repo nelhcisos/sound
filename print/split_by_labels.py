@@ -1,12 +1,16 @@
 """Разборка по объёму по меткам граней (цветным областям).
-usage: python3 split_by_labels.py in.glb labels.npy out_dir name height_mm base_cut_mm [head_cut_mm] [config.json]
+usage: python3 split_by_labels.py [--hollow] in.glb labels.npy out_dir name height_mm base_cut_mm [head_cut_mm] [config.json]
 labels.npy — метка на каждую грань (после merge_vertices), см. порядок PARTS.
 Каждый воксель внутри модели получает метку ближайшей поверхности,
 подставка отрезается плоскостью base_cut_mm. На каждом стыке — штифт
 у «родителя» и гнездо с зазором у «ребёнка».
+--hollow: крупные детали полые (стенка 1,5 мм, полость только там, где деталь
+толще 6 мм), штифты/гнёзда сплошные, 2 сливных отверстия Ø2,5 мм на скрытых стыках.
 """
 import sys
 from pathlib import Path
+HOLLOW = "--hollow" in sys.argv
+sys.argv = [a for a in sys.argv if a != "--hollow"]
 import numpy as np
 import trimesh
 from scipy import ndimage
@@ -102,6 +106,7 @@ if HEAD is not None:
     print('голова отрезана плоскостью', HEAD, flush=True)
 
 # штифты (считаем в окне вокруг стыка)
+keep = np.zeros(lab.shape, bool)  # зоны вокруг штифтов/гнёзд — без полостей и сливов
 for ch, par in PARENT.items():
     cm_full = lab == ch
     if not cm_full.any():
@@ -142,7 +147,69 @@ for ch, par in PARENT.items():
     hole = (t > -1) & (t < L + GAP / PITCH) & (d2 < (r + GAP / PITCH) ** 2)
     W[hole & cm] = -1
     W[peg] = par
+    rk = r + (GAP + 1.5) / PITCH
+    keep[sl] |= (t > -4.5 / PITCH) & (t < L + (GAP + 1.5) / PITCH) & (d2 < rk * rk)
     print(f"{PARTS[ch]} -> {PARTS[par]}: штифт Ø{2 * r * PITCH:.1f} × {L * PITCH:.1f} мм", flush=True)
+
+WALL, CORE, DR = 1.5, 3.0, 1.25  # мм
+
+
+def drill(W, p, a, b, r):
+    """Сверлит цилиндр радиуса r (вокс.) от a к b, с выходом наружу за a; убирает только деталь p."""
+    a = a.astype(float); b = b.astype(float)
+    d = b - a; ln = np.linalg.norm(d)
+    if ln < 1e-6:
+        return
+    u = d / ln; a2 = a - u * 4
+    lo = np.maximum(np.floor(np.minimum(a2, b) - r - 1).astype(int), 0)
+    hi = np.minimum(np.ceil(np.maximum(a2, b) + r + 2).astype(int), W.shape)
+    I_ = np.indices(hi - lo).reshape(3, -1).T + lo
+    rel = I_ - a2
+    t_ = np.clip(rel @ u, 0, ln + 4)
+    sel = I_[np.linalg.norm(rel - np.outer(t_, u), axis=1) <= r]
+    m_ = W[tuple(sel.T)] == p
+    W[tuple(sel[m_].T)] = -1
+
+
+if HOLLOW:
+    for p, nm in enumerate(PARTS):
+        idx = np.argwhere(lab == p)
+        if not len(idx):
+            continue
+        lo = np.maximum(idx.min(0) - 3, 0); hi = np.minimum(idx.max(0) + 4, lab.shape)
+        sl = tuple(slice(a, b) for a, b in zip(lo, hi))
+        W, K = lab[sl], keep[sl]
+        mk = W == p
+        core = ndimage.distance_transform_edt(mk) > CORE / PITCH
+        if not core.any():
+            continue
+        cav = (ndimage.distance_transform_edt(~core) <= (CORE - WALL) / PITCH) & mk & ~K
+        cc, k = ndimage.label(cav)
+        other = (W >= 0) & (W != p)
+        iface = mk & ndimage.binary_dilation(other) & ~K
+        cand = np.argwhere(iface)
+        if not len(cand):  # нет стыков — сливаем вниз
+            cand = idx[idx[:, 2] <= idx[:, 2].min() + 1] - lo
+        total = 0.0; holes = 0
+        for j in range(1, k + 1):
+            C = cc == j
+            vol = C.sum() * PITCH ** 3
+            if vol < 20:
+                continue
+            dC, ind = ndimage.distance_transform_edt(~C, return_indices=True)
+            dd = dC[tuple(cand.T)]
+            first = cand[np.argmin(dd)]
+            picks = [first]
+            far = np.linalg.norm(cand - first, axis=1) > 6 / PITCH
+            if far.any():
+                sub = cand[far]; picks.append(sub[np.argmin(dC[tuple(sub.T)])])
+            W[C] = -1
+            for a in picks:
+                b = np.array([ind[i][tuple(a)] for i in range(3)])
+                drill(W, p, a, b, DR / PITCH)
+            total += vol; holes += len(picks)
+        if total:
+            print(f"{nm}: полость {total:.0f} мм³, сливов {holes}", flush=True)
 
 for p, nm in enumerate(PARTS):
     mask = lab == p
@@ -153,9 +220,10 @@ for p, nm in enumerate(PARTS):
     v = (v - 2) * PITCH + org
     mesh = trimesh.Trimesh(v, fc)
     parts_ = mesh.split(only_watertight=False)
-    if len(parts_) > 1:  # убираем крошки
-        mesh = max(parts_, key=lambda q: abs(q.volume))
-    mesh.fix_normals()
+    if len(parts_) > 1:  # убираем крошки (оболочки полостей не трогаем — они крупные)
+        mesh = trimesh.util.concatenate([q for q in parts_ if abs(q.volume) > 1.0])
+    if mesh.volume < 0:
+        mesh.invert()
     fn = out / f"{name}_{p + 1}_{nm}.stl"
     mesh.export(fn)
-    print(fn.name, mesh.extents.round(1), "замкнута:", mesh.is_watertight, "кусков:", len(mesh.split(only_watertight=False)))
+    print(fn.name, mesh.extents.round(1), "замкнута:", mesh.is_watertight, "оболочек:", len(mesh.split(only_watertight=False)), "смола %.2f см³" % (mesh.volume / 1000))
