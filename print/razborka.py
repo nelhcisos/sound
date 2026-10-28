@@ -198,6 +198,47 @@ def color_membrane(cut, tm_from, lab_from):
     return heightfield_cutter(o, e1, e2, n, lo, hi, hfun, far), (o, n)
 
 
+def implicit_cutter(cut, tm_from, lab_from, step=0.25):
+    """Гладкая функция в объёме: >0 у цвета child, <0 у соседних цветов, 0 на линии перехода.
+    Поверхность разреза {f=0} может огибать загибы (рука заходит за пояс и т.п.)."""
+    child = cut["child"]
+    against = cut.get("against") or [int(x) for x in np.unique(lab_from) if x >= 0 and x != child]
+    rng = np.random.default_rng(0)
+    adj = tm_from.face_adjacency
+    la, lb = lab_from[adj[:, 0]], lab_from[adj[:, 1]]
+    sel = ((la == child) & np.isin(lb, against)) | ((lb == child) & np.isin(la, against))
+    if sel.sum() < 10:
+        raise RuntimeError(f"нет границы цвета для {PARTS[child]}")
+    B = tm_from.vertices[tm_from.face_adjacency_edges[sel]].mean(1)
+    cf = lab_from == child; af = np.isin(lab_from, against)
+    tcen = tm_from.triangles_center
+    C = tcen[cf]
+    lo = C.min(0) - 2.5; hi = C.max(0) + 2.5
+    inwin = np.all((tcen >= lo) & (tcen <= hi), axis=1)
+    A = tcen[af & inwin]
+    tb = cKDTree(B)
+    def pick(X, k):
+        return X[rng.choice(len(X), k, replace=False)] if len(X) > k else X
+    Bs, Cs, As = pick(B, 900), pick(C, 1500), pick(A, 1500)
+    vC = np.minimum(tb.query(Cs)[0], 2.0); vA = -np.minimum(tb.query(As)[0], 2.0)
+    P = np.r_[Bs, Cs, As]; V = np.r_[np.zeros(len(Bs)), vC, vA]
+    rbf = RBFInterpolator(P, V, kernel="thin_plate_spline", smoothing=1.0, degree=1)
+    xs = [np.arange(lo[i], hi[i] + step, step) for i in range(3)]
+    G = np.stack(np.meshgrid(*xs, indexing="ij"), -1).reshape(-1, 3)
+    F = np.concatenate([rbf(G[i:i + 200000]) for i in range(0, len(G), 200000)]).reshape([len(x) for x in xs])
+    F = np.pad(F, 1, constant_values=-1.0)
+    v, f, _, _ = measure.marching_cubes(F.astype(np.float32), 0.0)
+    v = (v - 1) * step + lo
+    tm = trimesh.Trimesh(v, f)
+    if tm.volume < 0:
+        tm.invert()
+    # проверка: сколько граней цвета оказалось не по своей стороне
+    okC = rbf(pick(C, 4000)) > 0; okA = rbf(pick(A, 4000)) < 0
+    log(f"  {PARTS[child]}: объёмный разрез, по своей стороне: деталь {okC.mean() * 100:.1f}%, соседи {okA.mean() * 100:.1f}%")
+    o = B.mean(0)
+    return from_tm(tm), (o, np.zeros(3))
+
+
 def plane_cutter(cut, ext):
     o = np.array(cut["point"], float); e1, e2, n = frame(np.array(cut["normal"], float))
     R = ext
@@ -213,6 +254,8 @@ for cut in cfg["cuts"]:
     tmf, labf = to_tm(parts[fr])
     if cut["type"] == "plane":
         K, (o, n) = plane_cutter(cut, ext)
+    elif cut["type"] == "implicit":
+        K, (o, n) = implicit_cutter(cut, tmf, labf)
     else:
         K, (o, n) = color_membrane(cut, tmf, labf)
     K = K.as_original(); kid = K.original_id()
