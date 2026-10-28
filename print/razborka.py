@@ -12,7 +12,8 @@ config.json:
   "parts": ["podstavka", "botinki", ...], "root": 2,   # деталь, которой сначала принадлежит вся модель
   "cuts": [                                  # по порядку; child вырезается из from
     {"child": 0, "from": 2, "type": "plane", "point": [0,0,4.5], "normal": [0,0,-1]},  # normal — в сторону child
-    {"child": 1, "from": 2, "type": "color", "against": [2]}   # гладкая поверхность через границу цвета child|against
+    {"child": 1, "from": 2, "type": "color"}   # гладкая поверхность через границу цвета child|все соседние цвета
+                                                # (можно сузить: "against": [2])
   ],
   "pegs": {"1": 0, ...},                     # child: parent — штифт на parent, гнездо в child
   "hollow": true
@@ -130,7 +131,8 @@ def heightfield_cutter(o, e1, e2, n, uv_lo, uv_hi, hfun, far, step=0.2):
 
 def color_membrane(cut, tm_from, lab_from):
     """Гладкая поверхность через границу цвета child|against на текущей детали from."""
-    child, against = cut["child"], cut["against"]
+    child = cut["child"]
+    against = cut.get("against") or [int(x) for x in np.unique(lab_from) if x >= 0 and x != child]
     adj = tm_from.face_adjacency
     la, lb = lab_from[adj[:, 0]], lab_from[adj[:, 1]]
     sel = ((la == child) & np.isin(lb, against)) | ((lb == child) & np.isin(la, against))
@@ -147,16 +149,45 @@ def color_membrane(cut, tm_from, lab_from):
         n = -n
     e1, e2, n = frame(n)
     q = pts - o; uv = np.c_[q @ e1, q @ e2]; w = q @ n
+    rng = np.random.default_rng(0)
     if len(uv) > 2500:
-        k = np.random.default_rng(0).choice(len(uv), 2500, replace=False); uv, w = uv[k], w[k]
-    rbf = RBFInterpolator(uv, w, kernel="thin_plate_spline", smoothing=len(uv) * 0.02)
-    hull = Delaunay(uv); lim = np.abs(w).max() + 1.0
+        k = rng.choice(len(uv), 2500, replace=False); uv, w = uv[k], w[k]
+    # грани child и грани против (рядом с child): цвет должен оказаться по свою сторону поверхности
+    tcen = tm_from.triangles_center
+    cC = tcen[cf] - o
+    af = np.isin(lab_from, against)
+    near = cKDTree(tcen[cf]).query(tcen[af], distance_upper_bound=4.0)[0] < 4.0
+    cA = tcen[af][near] - o
+    uvC, wC = np.c_[cC @ e1, cC @ e2], cC @ n
+    uvA, wA = np.c_[cA @ e1, cA @ e2], cA @ n
+    if len(uvC) > 40000:
+        k = rng.choice(len(uvC), 40000, replace=False); uvC, wC = uvC[k], wC[k]
+    if len(uvA) > 40000:
+        k = rng.choice(len(uvA), 40000, replace=False); uvA, wA = uvA[k], wA[k]
+    MG = 0.35
+    cu_, cw_ = uv.copy(), w.copy()
+    for it in range(4):
+        rbf = RBFInterpolator(cu_, cw_, kernel="thin_plate_spline", smoothing=len(cu_) * 0.02)
+        hA = rbf(uvA); hC = rbf(uvC)
+        badA = wA > hA - MG; badC = wC < hC + MG   # тело на стороне child / child на стороне тела
+        nb = badA.sum() + badC.sum()
+        if it == 0:
+            log(f"  {PARTS[child]}: не по своей стороне граней: тело {badA.sum()}, деталь {badC.sum()}")
+        if nb == 0:
+            break
+        addu = np.r_[uvA[badA], uvC[badC]]; addw = np.r_[wA[badA] + MG, wC[badC] - MG]
+        if len(addu) > 1500:
+            k = rng.choice(len(addu), 1500, replace=False); addu, addw = addu[k], addw[k]
+        cu_ = np.r_[cu_, addu]; cw_ = np.r_[cw_, addw]
+    log(f"  {PARTS[child]}: после подгонки не по своей стороне: тело {int(badA.sum())}, деталь {int(badC.sum())}")
+    rbf = RBFInterpolator(cu_, cw_, kernel="thin_plate_spline", smoothing=len(cu_) * 0.02)
+    hull = Delaunay(cu_); lim = max(np.abs(cw_).max(), np.abs(w).max()) + 1.0
     def hfun(U, V):
         X = np.c_[U.ravel(), V.ravel()]
         h = rbf(X)
         inside = hull.find_simplex(X) >= 0
         if (~inside).any():
-            d, _ = cKDTree(uv).query(X[~inside])
+            d, _ = cKDTree(cu_).query(X[~inside])
             h[~inside] *= np.exp(-(d / 3.0) ** 2)  # вне контура — плавно к плоскости
         return np.clip(h, -lim, lim).reshape(U.shape)
     # окно: проекция всей детали child (по её цветным граням) + запас
@@ -421,13 +452,15 @@ for p in sorted(parts):
         tm = trimesh.util.concatenate([c for c in cs if abs(c.volume) > 0.5])
         tm.merge_vertices()
     # точки самокасания (ребро у 4 граней) — заделываем перемычками 0,2 мм
-    u_, c_ = np.unique(tm.edges_sorted, axis=0, return_counts=True)
-    bad = u_[c_ != 2]
-    if len(bad):
+    for _fix in range(4):
+        u_, c_ = np.unique(tm.edges_sorted, axis=0, return_counts=True)
+        bad = u_[c_ != 2]
+        if not len(bad):
+            break
         pts = tm.vertices[bad].mean(1)
         keys = np.unique(np.round(pts / 0.3).astype(int), axis=0) * 0.3
         sph = [m3.Manifold.sphere(0.2, 12).translate(tuple(k)) for k in keys]
-        M2 = parts[p] + m3.Manifold.batch_boolean(sph, m3.OpType.Add)
+        parts[p] = M2 = parts[p] + m3.Manifold.batch_boolean(sph, m3.OpType.Add)
         tm, _ = to_tm(M2); tm.merge_vertices()
         cs = tm.split(only_watertight=False)
         if len(cs) > 1:
