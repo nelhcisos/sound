@@ -294,31 +294,50 @@ for chs, par in cfg["pegs"].items():
         img[rr, cc_] = True
     img = ndimage.binary_closing(img, iterations=2)
     dt = ndimage.distance_transform_edt(img) * st
-    ij = np.unravel_index(np.argmax(dt), dt.shape); inr = dt[ij]
-    a2 = lo + np.array(ij) * st
-    c0 = o + a2[0] * e1 + a2[1] * e2
-    c0 = trimesh.proximity.ProximityQuery(tc.submesh([fidx], append=True)).on_surface([c0])[0][0]
-    r = min(R_MAX, inr - MARGIN)
-    if r < 0.6:
-        log(f"{PARTS[ch]} -> {PARTS[par]}: площадка мала (вписанный радиус {inr:.1f} мм) — без штифта, на клей")
-        continue
-    ring = [c0] + [c0 + r * (np.cos(a) * e1 + np.sin(a) * e2) for a in np.linspace(0, 2 * np.pi, 12, endpoint=False)]
-    def depth(M, sign):
+    inr = dt.max()
+    # кандидаты: самые толстые места площадки (через ≥1 мм), радиус уменьшаем по шагам
+    order = np.argsort(dt.ravel())[::-1]
+    cands = []
+    for k in order[:20000]:
+        if dt.flat[k] < MARGIN + 0.6:
+            break
+        q = np.array(np.unravel_index(k, dt.shape))
+        if all(np.linalg.norm((q - c) * st) >= 1.0 for c in cands):
+            cands.append(q)
+        if len(cands) >= 12:
+            break
+    subp = trimesh.proximity.ProximityQuery(tc.submesh([fidx], append=True))
+    def depth(M, sign, ring):
         """Толщина материала по лучу от площадки: от пересечения с площадкой до следующей стенки."""
         ds = []
         for p0 in ring:
-            a, b = p0 - sign * dirv * 5, p0 + sign * dirv * 30
-            hits = sorted(h.distance * 35 - 5 for h in M.ray_cast(tuple(a), tuple(b)))
+            a_, b_ = p0 - sign * dirv * 5, p0 + sign * dirv * 30
+            hits = sorted(h.distance * 35 - 5 for h in M.ray_cast(tuple(a_), tuple(b_)))
             if not hits:
                 ds.append(0.0); continue
-            k = int(np.argmin([abs(h) for h in hits]))  # вход через площадку
-            ds.append(hits[k + 1] - hits[k] if k + 1 < len(hits) else 0.0)
+            k_ = int(np.argmin([abs(h) for h in hits]))
+            ds.append(hits[k_ + 1] - hits[k_] if k_ + 1 < len(hits) else 0.0)
         return min(ds)
-    dch = depth(parts[ch], 1); dpa = depth(parts[par], -1)
-    L = min(L_MAX, dch - 1.2); root = min(ROOT, dpa - 0.3)
-    if L < 1.2 or root < 0.8:
-        log(f"{PARTS[ch]} -> {PARTS[par]}: мало глубины (child {dch:.1f}, parent {dpa:.1f} мм) — без штифта, на клей")
+    found = None; why = f"площадка мала (вписанный радиус {inr:.1f} мм)"
+    for q in cands:
+        c0 = o + (lo[0] + q[0] * st) * e1 + (lo[1] + q[1] * st) * e2
+        c0 = subp.on_surface([c0])[0][0]
+        r0 = min(R_MAX, dt[tuple(q)] - MARGIN)
+        for r in (r0, r0 * 0.8, r0 * 0.65):
+            if r < 0.6:
+                break
+            ring = [c0] + [c0 + r * (np.cos(t) * e1 + np.sin(t) * e2) for t in np.linspace(0, 2 * np.pi, 12, endpoint=False)]
+            dch = depth(parts[ch], 1, ring); dpa = depth(parts[par], -1, ring)
+            L = min(L_MAX, dch - 1.2); root = min(ROOT, dpa - 0.3)
+            if L >= 1.2 and root >= 0.8:
+                found = (c0, r, L, root); break
+            why = f"мало глубины (child {dch:.1f}, parent {dpa:.1f} мм)"
+        if found:
+            break
+    if not found:
+        log(f"{PARTS[ch]} -> {PARTS[par]}: {why} — без штифта, на клей")
         continue
+    c0, r, L, root = found
     T = to_world(e1, e2, dirv, c0)
     chm = min(0.3, r * 0.3)
     peg = (m3.Manifold.cylinder(root + L - chm, r, r, 64).translate((0, 0, -root)) +
@@ -390,6 +409,23 @@ outs = []
 for p in sorted(parts):
     tm, _ = to_tm(parts[p])
     tm.merge_vertices()
+    # плёнки нулевой толщины — выбрасываем
+    cs = tm.split(only_watertight=False)
+    if len(cs) > 1:
+        tm = trimesh.util.concatenate([c for c in cs if abs(c.volume) > 0.5])
+        tm.merge_vertices()
+    # точки самокасания (ребро у 4 граней) — заделываем перемычками 0,2 мм
+    u_, c_ = np.unique(tm.edges_sorted, axis=0, return_counts=True)
+    bad = u_[c_ != 2]
+    if len(bad):
+        pts = tm.vertices[bad].mean(1)
+        keys = np.unique(np.round(pts / 0.3).astype(int), axis=0) * 0.3
+        sph = [m3.Manifold.sphere(0.2, 12).translate(tuple(k)) for k in keys]
+        M2 = parts[p] + m3.Manifold.batch_boolean(sph, m3.OpType.Add)
+        tm, _ = to_tm(M2); tm.merge_vertices()
+        cs = tm.split(only_watertight=False)
+        if len(cs) > 1:
+            tm = trimesh.util.concatenate([c for c in cs if abs(c.volume) > 0.5]); tm.merge_vertices()
     fn = OUT / f"{NAME}_{p + 1}_{PARTS[p]}.stl"
     tm.export(fn)
     outs.append(tm)
