@@ -37,7 +37,8 @@ OUT = Path(cfg["out"]); OUT.mkdir(parents=True, exist_ok=True)
 PARTS = cfg["parts"]; NAME = cfg["name"]
 GAP, R_MAX, L_MAX, ROOT, MARGIN = 0.15, 2.5, 3.0, 2.0, 1.5      # мм
 WALL, CORE, DRAIN_R = 1.5, 3.0, 1.25
-log = lambda *a: print(*a, flush=True)
+import resource
+log = lambda *a: print(*a, "[%.1f ГБ]" % (resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1048576), flush=True)
 
 # ---------- модель ----------
 s = trimesh.load(cfg["glb"], force="scene")
@@ -276,8 +277,10 @@ for chs, par in cfg["pegs"].items():
     if len(pf) < 3 or len(cf) < 3:
         log(f"{PARTS[ch]}: нет площадки стыка с {PARTS[par]}"); continue
     sub = tp.submesh([pf], append=True)
-    d = trimesh.proximity.ProximityQuery(sub).on_surface(tc.triangles_center[cf])[1]
-    fidx = cf[d < 0.02]
+    n_s = int(min(2e6, max(2e4, sub.area / 0.03 ** 2)))
+    sp_ = trimesh.sample.sample_surface(sub, n_s, seed=0)[0]
+    d = cKDTree(sp_).query(tc.triangles_center[cf])[0]
+    fidx = cf[d < 0.06]
     if len(fidx) < 3:
         log(f"{PARTS[ch]}: площадка не касается {PARTS[par]}"); continue
     dirv = -(tc.face_normals[fidx] * tc.area_faces[fidx, None]).sum(0); dirv /= np.linalg.norm(dirv)
@@ -306,7 +309,9 @@ for chs, par in cfg["pegs"].items():
             cands.append(q)
         if len(cands) >= 12:
             break
-    subp = trimesh.proximity.ProximityQuery(tc.submesh([fidx], append=True))
+    psub = tc.submesh([fidx], append=True)
+    psp = trimesh.sample.sample_surface(psub, int(min(2e6, max(2e4, psub.area / 0.03 ** 2))), seed=1)[0]
+    ptree = cKDTree(psp)
     def depth(M, sign, ring):
         """Толщина материала по лучу от площадки: от пересечения с площадкой до следующей стенки."""
         ds = []
@@ -318,10 +323,11 @@ for chs, par in cfg["pegs"].items():
             k_ = int(np.argmin([abs(h) for h in hits]))
             ds.append(hits[k_ + 1] - hits[k_] if k_ + 1 < len(hits) else 0.0)
         return min(ds)
+    log(f"  {PARTS[ch]}: площадка {len(fidx)} граней, растр {shp}, кандидатов {len(cands)}")
     found = None; why = f"площадка мала (вписанный радиус {inr:.1f} мм)"
     for q in cands:
         c0 = o + (lo[0] + q[0] * st) * e1 + (lo[1] + q[1] * st) * e2
-        c0 = subp.on_surface([c0])[0][0]
+        c0 = psp[ptree.query(c0)[1]]
         r0 = min(R_MAX, dt[tuple(q)] - MARGIN)
         for r in (r0, r0 * 0.8, r0 * 0.65):
             if r < 0.6:
