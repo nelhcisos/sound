@@ -38,6 +38,7 @@ OUT = Path(cfg["out"]); OUT.mkdir(parents=True, exist_ok=True)
 PARTS = cfg["parts"]; NAME = cfg["name"]
 GAP, R_MAX, L_MAX, ROOT, MARGIN = 0.15, 2.5, 3.0, 2.0, 1.5      # мм
 WALL, CORE, DRAIN_R = 1.5, 3.0, 1.25
+PEG_SHAPE = cfg.get("peg_shape", "square")
 import resource
 log = lambda *a: print(*a, "[%.1f ГБ]" % (resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1048576), flush=True)
 
@@ -406,7 +407,7 @@ for chs, par in cfg["pegs"].items():
         for r in (r0, r0 * 0.8, r0 * 0.65):
             if r < 0.6:
                 break
-            ring = [c0] + [c0 + r * (np.cos(t) * e1 + np.sin(t) * e2) for t in np.linspace(0, 2 * np.pi, 12, endpoint=False)]
+            ring = [c0] + [c0 + r * (np.cos(t) * e1 + np.sin(t) * e2) for t in np.linspace(0, 2 * np.pi, 16, endpoint=False)]
             dch = depth(parts[ch], 1, ring); dpa = depth(parts[par], -1, ring)
             L = min(L_MAX, dch - 1.2); root = min(ROOT, dpa - 0.3)
             if L >= 1.2 and root >= 0.8:
@@ -420,13 +421,23 @@ for chs, par in cfg["pegs"].items():
     c0, r, L, root = found
     T = to_world(e1, e2, dirv, c0)
     chm = min(0.3, r * 0.3)
-    peg = (m3.Manifold.cylinder(root + L - chm, r, r, 64).translate((0, 0, -root)) +
-           m3.Manifold.cylinder(chm, r, r - chm, 64).translate((0, 0, L - chm))).transform(T)
-    sock = m3.Manifold.cylinder(root + 0.5 + L + GAP, r + GAP, r + GAP, 64).translate((0, 0, -root - 0.5)).transform(T)
+    if PEG_SHAPE == "square":
+        # квадратный штифт (вписан в круг радиуса r): не даёт детали провернуться
+        a = r * np.sqrt(2)
+        sq = m3.CrossSection.square((a, a), True)
+        peg = (m3.Manifold.extrude(sq, root + L - chm).translate((0, 0, -root)) +
+               m3.Manifold.extrude(sq, chm, 0, 0.0, ((a - 2 * chm) / a, (a - 2 * chm) / a)).translate((0, 0, L - chm))).transform(T)
+        sock = m3.Manifold.extrude(m3.CrossSection.square((a + 2 * GAP, a + 2 * GAP), True),
+                                   root + 0.5 + L + GAP).translate((0, 0, -root - 0.5)).transform(T)
+    else:
+        peg = (m3.Manifold.cylinder(root + L - chm, r, r, 64).translate((0, 0, -root)) +
+               m3.Manifold.cylinder(chm, r, r - chm, 64).translate((0, 0, L - chm))).transform(T)
+        sock = m3.Manifold.cylinder(root + 0.5 + L + GAP, r + GAP, r + GAP, 64).translate((0, 0, -root - 0.5)).transform(T)
     parts[par] = parts[par] + peg
     parts[ch] = parts[ch] - sock
     pegs.append((par, ch, c0, dirv, r, L, root))
-    log(f"{PARTS[ch]} -> {PARTS[par]}: штифт Ø{2 * r:.1f} × {L:.1f} мм, корень {root:.1f} мм, площадка r={inr:.1f}")
+    sz = f"квадрат {r * np.sqrt(2):.1f}×{r * np.sqrt(2):.1f}" if PEG_SHAPE == "square" else f"Ø{2 * r:.1f}"
+    log(f"{PARTS[ch]} -> {PARTS[par]}: штифт {sz} × {L:.1f} мм, корень {root:.1f} мм, площадка r={inr:.1f}")
 
 # ---------- полости ----------
 if cfg.get("hollow"):
@@ -501,8 +512,9 @@ for p in sorted(parts):
         if not len(bad):
             break
         pts = tm.vertices[bad].mean(1)
-        keys = np.unique(np.round(pts / 0.3).astype(int), axis=0) * 0.3
-        sph = [m3.Manifold.sphere(0.2, 12).translate(tuple(k)) for k in keys]
+        grp = np.unique(np.round(pts / 0.3).astype(int), axis=0, return_inverse=True)[1].ravel()
+        keys = np.array([pts[grp == g_].mean(0) for g_ in np.unique(grp)])
+        sph = [m3.Manifold.sphere(0.25, 12).translate(tuple(k)) for k in keys]
         parts[p] = M2 = parts[p] + m3.Manifold.batch_boolean(sph, m3.OpType.Add)
         tm, _ = to_tm(M2); tm.merge_vertices()
         cs = tm.split(only_watertight=False)
