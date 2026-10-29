@@ -2,6 +2,7 @@
 
 | Превью | Модель | STL |
 |---|---|---|
+| <img src="my_room/preview.png" width="160"> | my_room | [my_room_1to50.stl](my_room/my_room_1to50.stl) |
 | <img src="puffer_guy/preview.png" width="160"> | puffer_guy | [puffer_guy_40mm_hollow.stl](puffer_guy/puffer_guy_40mm_hollow.stl) |
 | <img src="redhead_black_tracksuit/preview.png" width="160"> | redhead_black_tracksuit | [redhead_black_tracksuit_40mm_hollow.stl](redhead_black_tracksuit/redhead_black_tracksuit_40mm_hollow.stl) |
 | <img src="redhead_black_tracksuit_parts/labels_3d.png" width="160"> | redhead_black_tracksuit_parts | [папка, 12 частей](redhead_black_tracksuit_parts/)<br>[body.stl](redhead_black_tracksuit_parts/body.stl)<br>[hair.stl](redhead_black_tracksuit_parts/hair.stl)<br>[hands.stl](redhead_black_tracksuit_parts/hands.stl)<br>[head.stl](redhead_black_tracksuit_parts/head.stl)<br>[neck.stl](redhead_black_tracksuit_parts/neck.stl)<br>[pant_left.stl](redhead_black_tracksuit_parts/pant_left.stl)<br>[pant_right.stl](redhead_black_tracksuit_parts/pant_right.stl)<br>[platform.stl](redhead_black_tracksuit_parts/platform.stl)<br>[shoe_left.stl](redhead_black_tracksuit_parts/shoe_left.stl)<br>[shoe_right.stl](redhead_black_tracksuit_parts/shoe_right.stl)<br>[sleeve_left.stl](redhead_black_tracksuit_parts/sleeve_left.stl)<br>[sleeve_right.stl](redhead_black_tracksuit_parts/sleeve_right.stl) |
