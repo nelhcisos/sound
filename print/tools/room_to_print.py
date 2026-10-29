@@ -2,10 +2,10 @@
 
 python3 print/tools/room_to_print.py <room.glb> <out.stl> [масштаб, по умолч. 50]
 
-- выкидывает потолок, люстру, южную стену и нишу с входной дверью (вид «кукольный домик»);
+- выкидывает потолок, люстру и стену с входной дверью (вид «кукольный домик»);
 - все детали чуть раздуваются (0,1 мм на печати), чтобы касающиеся слились;
 - тонкое доводится до минимума 0,5 мм на печати;
-- под полом основание 3 мм;
+- под полом (ENV_floor*) основание 3 мм;
 - всё объединяется в одно замкнутое тело (manifold3d), Z вверх, мм.
 """
 import sys
@@ -20,8 +20,9 @@ MIN_MM = 0.5                  # минимальная толщина на пе�
 GROW_MM = 0.1                 # раздувание для слияния касающихся деталей
 BASE_MM = 3.0
 
-SKIP = ("ENV_ceiling", "ENV_wall_south", "ENV_wall_recess", "ENV_baseboard_south",
-        "ENV_cornice_south", "PRP_entry_", "PRP_ceiling_lamp", "PRP_rug_line")
+# снимаем потолок и стену со входной дверью (выступ), чтобы было видно комнату
+SKIP = ("ENV_ceiling", "ENV_wall_door", "ENV_baseboard_door", "ENV_cornice_door",
+        "PRP_entry_", "PRP_ceiling_lamp", "PRP_rug_line")
 
 # доп. утолщение (мм, X/Y/Z) — чтобы деталь дотянулась до стены
 EXTRA = {"PRP_radiator_fin": (0, 1.6, 0)}
@@ -53,7 +54,7 @@ for node in scene.graph.nodes_geometry:
     ext = hi - lo
     c = (lo + hi) / 2
     # небольшой разброс, чтобы грани соседних деталей не совпадали ровно (иначе рёбра «на 4 грани»)
-    target = np.maximum(ext, MIN_MM) + 2 * GROW_MM + RNG.uniform(0.0, 0.03, 3)
+    target = np.maximum(ext, MIN_MM) + 2 * GROW_MM + RNG.uniform(0.0, 0.08, 3)
     for pre, extra in EXTRA.items():
         if node.startswith(pre):
             target = target + np.array(extra)
@@ -76,13 +77,13 @@ for n, m in parts:
         print("skip broken:", n, x.status()); continue
     solids.append(x)
 
-# комната без южной ниши: x -0.1..3.5, y 0..4.9 м
-x0, x1, y0, y1 = -0.1 * K, 3.5 * K, -0.1 * K, 4.9 * K
-base = mf.Manifold.cube([x1 - x0, y1 - y0, BASE_MM]).translate([x0, y0, -BASE_MM])
-solids.append(base)
+# основание BASE_MM под каждым полом (ENV_floor*)
+for n, m in parts:
+    if n.startswith("ENV_floor"):
+        lo, hi = m.bounds
+        solids.append(mf.Manifold.cube([hi[0] - lo[0], hi[1] - lo[1], BASE_MM + lo[2] + 0.05])
+                      .translate([lo[0], lo[1], -BASE_MM]))
 u = mf.Manifold.batch_boolean(solids, mf.OpType.Add)
-clip = mf.Manifold.cube([x1 - x0, y1 - y0, 200]).translate([x0, y0, -BASE_MM])
-u = u ^ clip
 
 # полости внутри (отрицательный объём) заливаем, отдельные куски показываем
 pieces = u.decompose()
