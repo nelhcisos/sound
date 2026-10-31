@@ -2,7 +2,8 @@
 
 | Превью | Модель | STL |
 |---|---|---|
-| <img src="cryptex/preview.png" width="160"> | cryptex | [папка, 9 частей](cryptex/)<br>[capsule_B.stl](cryptex/capsule_B.stl)<br>[collar.stl](cryptex/collar.stl)<br>[core_A.stl](cryptex/core_A.stl)<br>[ring_1.stl](cryptex/ring_1.stl)<br>[ring_2.stl](cryptex/ring_2.stl)<br>[ring_3.stl](cryptex/ring_3.stl)<br>[ring_4.stl](cryptex/ring_4.stl)<br>[ring_5.stl](cryptex/ring_5.stl)<br>[sleeve.stl](cryptex/sleeve.stl) |
+| <img src="cryptex/preview.png" width="160"> | cryptex | [папка, 11 частей](cryptex/)<br>[cap_A.stl](cryptex/cap_A.stl)<br>[cap_B.stl](cryptex/cap_B.stl)<br>[capsule_B_tube.stl](cryptex/capsule_B_tube.stl)<br>[collar.stl](cryptex/collar.stl)<br>[core_A_tube.stl](cryptex/core_A_tube.stl)<br>[ring_1.stl](cryptex/ring_1.stl)<br>[ring_2.stl](cryptex/ring_2.stl)<br>[ring_3.stl](cryptex/ring_3.stl)<br>[ring_4.stl](cryptex/ring_4.stl)<br>[ring_5.stl](cryptex/ring_5.stl)<br>[sleeve.stl](cryptex/sleeve.stl) |
+| <img src="cryptex_test/preview.png" width="160"> | cryptex_test | [папка, 7 частей](cryptex_test/)<br>[cap_A.stl](cryptex_test/cap_A.stl)<br>[cap_B.stl](cryptex_test/cap_B.stl)<br>[capsule_B_tube.stl](cryptex_test/capsule_B_tube.stl)<br>[collar.stl](cryptex_test/collar.stl)<br>[core_A_tube.stl](cryptex_test/core_A_tube.stl)<br>[ring_1.stl](cryptex_test/ring_1.stl)<br>[sleeve.stl](cryptex_test/sleeve.stl) |
 | <img src="my_room/preview.png" width="160"> | my_room | [my_room_1to50.stl](my_room/my_room_1to50.stl) |
 | <img src="puffer_guy/preview.png" width="160"> | puffer_guy | [puffer_guy_40mm_hollow.stl](puffer_guy/puffer_guy_40mm_hollow.stl) |
 | <img src="redhead_black_tracksuit/preview.png" width="160"> | redhead_black_tracksuit | [redhead_black_tracksuit_40mm_hollow.stl](redhead_black_tracksuit/redhead_black_tracksuit_40mm_hollow.stl) |
