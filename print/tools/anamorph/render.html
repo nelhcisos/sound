@@ -1,0 +1,83 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<style>html,body{margin:0;background:#000;overflow:hidden}canvas{display:block}</style>
+<script type="importmap">{"imports":{"three":"./node_modules/three/build/three.module.js","three/addons/":"./node_modules/three/examples/jsm/"}}</script>
+</head><body>
+<script type="module">
+import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { Reflector } from 'three/addons/objects/Reflector.js';
+
+const params = new URLSearchParams(location.search);
+const W = +(params.get('w') || 1600), H = +(params.get('h') || 800);
+const dir = params.get('dir') || 'out';
+const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
+renderer.setSize(W, H); renderer.setPixelRatio(1);
+renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.05;
+document.body.appendChild(renderer.domElement);
+
+const scene = new THREE.Scene();
+// небо-градиент
+const skyGeo = new THREE.SphereGeometry(4000, 32, 16);
+const skyMat = new THREE.ShaderMaterial({ side: THREE.BackSide, depthWrite: false,
+  uniforms: { top: { value: new THREE.Color(0x3f86c9) }, bot: { value: new THREE.Color(0xbfdcf0) } },
+  vertexShader: 'varying vec3 vp; void main(){ vp = normalize(position); gl_Position = projectionMatrix*modelViewMatrix*vec4(position,1.); }',
+  fragmentShader: 'uniform vec3 top; uniform vec3 bot; varying vec3 vp; void main(){ float t = clamp(vp.y*2.2+0.15,0.,1.); gl_FragColor = vec4(mix(bot,top,t),1.); }' });
+scene.add(new THREE.Mesh(skyGeo, skyMat));
+
+scene.add(new THREE.HemisphereLight(0xcfe6ff, 0x8a5a33, 1.25));
+const sun = new THREE.DirectionalLight(0xfff1dc, 2.6);
+sun.position.set(-160, 260, 140); sun.castShadow = true;
+sun.shadow.mapSize.set(4096, 4096);
+Object.assign(sun.shadow.camera, { left: -110, right: 110, top: 110, bottom: -110, near: 10, far: 900 });
+sun.shadow.bias = -0.0004; sun.shadow.normalBias = 0.15;
+scene.add(sun);
+
+const COLORS = { stone: 0xd99559, red: 0xa63a22, statue: 0xe2cdae, base: 0x6b8fa8, post: 0x8c8f96 };
+const mats = {};
+for (const k in COLORS) mats[k] = new THREE.MeshStandardMaterial({ color: COLORS[k], roughness: 0.92, metalness: 0, flatShading: true });
+mats.statue = new THREE.MeshStandardMaterial({ color: COLORS.statue, roughness: 0.8, metalness: 0, flatShading: false });
+
+const view = await (await fetch(`${dir}/view.json`)).json();
+const gltf = await new GLTFLoader().loadAsync(`${dir}/scene.glb`);
+const root = gltf.scene; window.root = root;
+root.traverse(o => {
+  if (!o.isMesh) return;
+  const n = o.name;
+  const kind = n.startsWith('red') ? 'red' : n.startsWith('stone') ? 'stone' : n.startsWith('statue') ? 'statue' : n.startsWith('post') ? 'post' : 'base';
+  if (kind === 'post') { window.postMesh = o; o.visible = false; }
+  o.material = mats[kind]; o.userData.kind = kind;
+  if (kind === 'statue') { o.geometry.computeVertexNormals(); }
+  o.castShadow = true; o.receiveShadow = true;
+});
+scene.add(root);
+
+// вода-зеркало
+const b = view.bounds;
+const water = new Reflector(new THREE.PlaneGeometry(b.x1 - b.x0, b.y1 - b.y0), { color: 0x8fb6d6, textureWidth: W, textureHeight: H });
+water.rotation.x = -Math.PI / 2; water.position.set((b.x0 + b.x1) / 2, 0.03, -(b.y0 + b.y1) / 2);
+scene.add(water);
+window.water = water;
+
+const cam = new THREE.PerspectiveCamera(view.fov, W / H, 1, 5000);
+const C = new THREE.Vector3(...view.cam), T = new THREE.Vector3(...view.tgt);
+window.setView = ({ yaw = 0, pitch = 0, dist = 1, fov = view.fov, dx = 0, dy = 0, mode = 'game', post = false } = {}) => {
+  if (window.postMesh) window.postMesh.visible = post;
+  // поворот точки взгляда вокруг вертикальной оси через цель
+  const off = C.clone().sub(T);
+  const r = Math.hypot(off.x, off.z) * dist, h0 = off.y * dist;
+  const a0 = Math.atan2(off.x, off.z) + yaw * Math.PI / 180;
+  const el = Math.atan2(h0, r) + pitch * Math.PI / 180;
+  const R = Math.hypot(r, h0);
+  cam.position.set(T.x + R * Math.cos(el) * Math.sin(a0) + dx, T.y + R * Math.sin(el) + dy, T.z + R * Math.cos(el) * Math.cos(a0));
+  cam.fov = fov; cam.updateProjectionMatrix(); cam.lookAt(T.x + dx, T.y + dy, T.z);
+  mats.stone.color.set(mode === 'print' ? 0xd8c3a5 : COLORS.stone);
+  mats.statue.color.set(mode === 'print' ? 0xd8c3a5 : COLORS.statue);
+  renderer.render(scene, cam);
+  return true;
+};
+window.setView({});
+window.DONE = true;
+</script></body></html>
