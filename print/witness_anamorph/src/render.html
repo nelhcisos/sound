@@ -1,0 +1,20 @@
+<html><body style="margin:0;background:#000">
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/STLLoader.js"></script>
+<script>
+const q=new URLSearchParams(location.search);
+const W=+q.get('w')||800,Hh=+q.get('h')||800;
+const r=new THREE.WebGLRenderer({antialias:true,preserveDrawingBuffer:true});r.setSize(W,Hh);document.body.appendChild(r.domElement);
+r.shadowMap.enabled=true;
+const sc=new THREE.Scene();sc.background=new THREE.Color(0x8ec9f0);
+sc.add(new THREE.HemisphereLight(0xffffff,0x667755,0.55));
+const dl=new THREE.DirectionalLight(0xffffff,0.75);dl.position.set(-60,140,-40);dl.castShadow=true;
+dl.shadow.mapSize.set(2048,2048);Object.assign(dl.shadow.camera,{left:-120,right:120,top:120,bottom:-120,near:1,far:400});sc.add(dl);
+const files=JSON.parse(q.get('f'));
+const cam=new THREE.PerspectiveCamera(+q.get('fov')||40,W/Hh,1,1000);
+const c=JSON.parse(q.get('cam'));cam.position.set(...c.p);cam.lookAt(...c.t);
+let n=0;const L=new THREE.STLLoader();
+files.forEach(([fn,col])=>L.load((q.get('dir')||'out')+'/'+fn,g=>{g.computeVertexNormals();
+ const m=new THREE.Mesh(g,(q.get('basic')?new THREE.MeshBasicMaterial({color:col}):new THREE.MeshStandardMaterial({color:col,roughness:0.8,metalness:0})));m.castShadow=m.receiveShadow=true;sc.add(m);
+ if(++n==files.length){r.render(sc,cam);window.DONE=1;}}));
+</script></body></html>
