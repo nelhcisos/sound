@@ -69,6 +69,9 @@ WALL_CH = 1.6                          # стенка между тайнико�
 # ---------------------------------------------------------------- по длине
 RW, GW, GAP = 14.0, 8.6, 0.2           # кольцо, канавка, зазор между кольцами
 FL, COLLAR_W, CAP_T, BOSS_H = 5.0, 5.0, 6.0, 3.0
+CAP_T_FIG = 7.0                        # торец-подставка фигурки
+PIN_R, PIN_L, PIN_RAD = 0.8, 2.5, 14.6  # штырьки тубус -> торец-подставка
+PIN_ANGLES = (60.0, -110.0)             # несимметрично: торец встаёт только одним положением
 TAB_A_X0, TAB_A_X1 = -3.0, 0.0         # верх зуба A относительно центра канавки
 HEAD_B_X0, HEAD_B_X1 = -1.6, 2.4       # верх головки B
 
@@ -153,11 +156,18 @@ def cargo_profile(grow=0.0):
     return bd.offset(out, grow) if grow else out
 
 
-def letter_cut(ch, x_c):
-    t = bd.Text(ch, 6.5, font_path=FONT, align=(bd.Align.CENTER, bd.Align.CENTER))
-    h = t.bounding_box().size.Y
-    if h > 4.9:                       # Q, J с хвостиками — ужать, чтобы не задевать риски
-        t = bd.scale(t, 4.9 / h)
+def letter_cut(ch, x_c, upright=False):
+    if upright:
+        # вертикальный криптекс: буква стоит вдоль оси (верх буквы -> -X, к торцу A)
+        t = bd.Text(ch, 8.0, font_path=FONT, align=(bd.Align.CENTER, bd.Align.CENTER))
+        bb = t.bounding_box().size
+        t = bd.scale(t, by=(min(1.0, 4.4 / bb.X), min(1.0, 7.0 / bb.Y), 1.0))
+        t = bd.Rot(0, 0, 90) * t
+    else:
+        t = bd.Text(ch, 6.5, font_path=FONT, align=(bd.Align.CENTER, bd.Align.CENTER))
+        h = t.bounding_box().size.Y
+        if h > 4.9:                   # Q, J с хвостиками — ужать, чтобы не задевать риски
+            t = bd.scale(t, 4.9 / h)
     solid = bd.extrude(bd.Plane.XZ * t, amount=3.0)       # Plane.XZ: нормаль -Y
     return bd.Pos(x_c, -(R_OUT - 0.6), 0) * solid
 
@@ -169,10 +179,14 @@ def ang_dist(a, b):
 
 # ================================================================ криптекс
 class Cryptex:
-    def __init__(self, word_a=WORD_A, word_b=WORD_B, cap_t=CAP_T):
+    def __init__(self, word_a=WORD_A, word_b=WORD_B, cap_t=CAP_T, figure=False):
         assert len(word_a) == len(word_b)
         self.wa, self.wb, self.n = word_a, word_b, len(word_a)
         self.cap_t = cap_t
+        # figure=True: вертикальный криптекс, торец A — подставка фигурки (буквы вдоль оси,
+        # торец A без бобышки, клеится на два штырька, чтобы фигурка встала лицом к коду)
+        self.figure = figure
+        self.dir = -1 if figure else 1   # у вертикального алфавит слева направо
         for a, b in zip(word_a, word_b):
             sep = ang_dist((ALPHABET.index(b) - ALPHABET.index(a)) * STEP_DEG + 180.0, 0.0)
             assert sep > 25.0, f"буквы {a}/{b}: пазы A и B наложатся — поменяй слово"
@@ -189,7 +203,8 @@ class Cryptex:
     # ------------------------------------------------------------ кольцо
     def notch_angles(self, i):
         a_ch, b_ch = ALPHABET.index(self.wa[i]), ALPHABET.index(self.wb[i])
-        return a_ch * STEP_DEG - 90.0, b_ch * STEP_DEG + 90.0   # в системе кольца
+        d = self.dir
+        return d * a_ch * STEP_DEG - 90.0, d * b_ch * STEP_DEG + 90.0   # в системе кольца
 
     def vent_angles(self, n1, n2):
         best = None
@@ -226,7 +241,7 @@ class Cryptex:
         body -= bd.extrude(face_r * (bd.Pos(0, 23.0) * num), amount=0.4)
         if letters:
             for k, ch in enumerate(ALPHABET):
-                body -= rot(k * STEP_DEG - 90.0) * letter_cut(ch, RW / 2)
+                body -= rot(self.dir * k * STEP_DEG - 90.0) * letter_cut(ch, RW / 2, self.figure)
             for k in range(N):
                 body -= rot((k + 0.5) * STEP_DEG) * rad_box(1.2, RW - 1.2, 0.4, R_OUT - 0.4, R_OUT + 1)
         body.label = f"ring_{i + 1}"
@@ -235,7 +250,7 @@ class Cryptex:
     def ring_placed(self, i, code, letters=True, ring_shape=None):
         k = ALPHABET.index(code[i])
         r = ring_shape if ring_shape is not None else self.ring(i, letters)
-        return bd.Pos(self.x_ring0 + i * self.pitch, 0, 0) * rot(90.0 - k * STEP_DEG) * r
+        return bd.Pos(self.x_ring0 + i * self.pitch, 0, 0) * rot(90.0 - self.dir * k * STEP_DEG) * r
 
     # ------------------------------------------------------------ гильза + левый фланец
     def sleeve(self):
@@ -281,6 +296,9 @@ class Cryptex:
         t -= edge_chamfer(L, R_CORE, EF, -1, False)
         t -= extrude_x(u_profile(EF), L, L - EF, taper=45) + extrude_x(u_profile(EF), L, L + 1)
         t -= bd.Pos(L, 0, -5.5) * bd.Box(1.6, 1.5, 4.0)
+        if self.figure:                                   # штырьки под торец-подставку
+            for a in PIN_ANGLES:
+                t += rot(a) * cyl(PIN_R, -PIN_L, 0.5, z=PIN_RAD)
         t.label = "core_A_tube"
         return t
 
@@ -324,7 +342,21 @@ class Cryptex:
             c -= rot(k * 10) * rad_box(x0 + 1.5, x1 - 1.5, 1.2, R_OUT - 0.5, R_OUT + 1)
         return c
 
+    def cap_a_figure(self):
+        """Торец-подставка фигурки: гладкий диск Ø50 со скруглением сверху (как у её подставки).
+        Гнёзда под кроксы вычитаются потом из сетки (surgeon_sockets.py)."""
+        t = CAP_T_FIG
+        c = cyl(R_OUT, -t, 0)
+        c = bd.fillet(c.edges().filter_by(bd.GeomType.CIRCLE).sort_by(bd.Axis.X)[0], 2.5)
+        c -= edge_chamfer(0.0, R_OUT, EF, -1, False)          # внутренняя сторона лежит на столе
+        for a in PIN_ANGLES:
+            c -= rot(a) * cyl(PIN_R + CLR_GLUE, -PIN_L - 0.5, 0.5, z=PIN_RAD)
+        c.label = "cap_A"
+        return c
+
     def cap_a(self):
+        if self.figure:
+            return self.cap_a_figure()
         c = self.cap_disc(0.0, -1) + extrude_x(cargo_profile(-CLR_GLUE), 0, BOSS_H)
         c.label = "cap_A"
         return c
@@ -355,7 +387,10 @@ class Cryptex:
         parts["core_A_tube"] = bd.Pos(0, 0, self.l_core) * (down_right * self.core_tube())
         brim = cyl(9.0, self.xc0 - 0.8, self.xc0 + 0.01, z=Z_CAPS)  # отламываемая «юбка» под тонкую капсулу
         parts["capsule_B_tube"] = bd.Pos(0, 0, -(self.xc0 - 0.8)) * (down_left * (self.capsule_tube() + brim))
-        parts["cap_A"] = bd.Pos(0, 0, self.cap_t) * (down_left * self.cap_a())
+        if self.figure:      # гладкой внутренней стороной на стол, гнёзда под фигурку вверх
+            parts["cap_A"] = down_right * self.cap_a()
+        else:
+            parts["cap_A"] = bd.Pos(0, 0, self.cap_t) * (down_left * self.cap_a())
         parts["cap_B"] = bd.Pos(0, 0, self.xc1 + self.cap_t) * (down_right * self.cap_b())
         for i in range(self.n):
             parts[f"ring_{i + 1}"] = down_left * self.ring(i, letters)

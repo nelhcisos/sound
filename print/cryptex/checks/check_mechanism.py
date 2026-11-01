@@ -5,8 +5,10 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import cryptex as C
 from cadgen import build123d as bd
 
-words = sys.argv[1:3] if len(sys.argv) > 2 else (C.WORD_A, C.WORD_B)
-cx = C.Cryptex(*words)
+fig = "--figure" in sys.argv
+args = [a for a in sys.argv[1:] if a != "--figure"]
+words = args[:2] if len(args) >= 2 else (C.WORD_A, C.WORD_B)
+cx = C.Cryptex(*words, figure=fig)
 tube_a, cap_a, tube_b, cap_b = cx.core_tube(), cx.cap_a(), cx.capsule_tube(), cx.cap_b()
 core, caps = tube_a + cap_a, tube_b + cap_b
 slv, col = cx.sleeve(), cx.collar()
