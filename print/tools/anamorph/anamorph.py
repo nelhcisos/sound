@@ -341,3 +341,38 @@ def moss_solid(cam, stone, M, facets, t_n=0.35, d_max=1.0, sink=0.12, min_area=0
     if not parts:
         return None
     return mf.Manifold.batch_boolean(parts, mf.OpType.Add)
+
+
+def moss_recess(cam, stone, M, facets, depth=1.0, lift=0.2, min_area=0.0):
+    """Углубление под мох: по каждой грани — призма внутрь по нормали.
+
+    Край углубления лежит на поверхности ровно по контуру узора (из точки
+    обзора контур совпадает с рисунком), дно в тени — линия читается без краски.
+    """
+    import manifold3d as mf
+    parts = []
+    for i, Fp in facets:
+        polys = _polys(M.intersection(Fp))
+        if not polys:
+            continue
+        plane = stone.P[i]
+        n = plane[:3]
+        F0 = n * plane[3]
+        e = np.array([0, 0, 1.0]) if abs(n[2]) < 0.9 else np.array([1.0, 0, 0])
+        a = unit(np.cross(n, e))
+        b = np.cross(n, a)
+        rings = []
+        for p in polys:
+            for r in _rings(p):
+                X = cam.lift(np.asarray(r.coords)[:-1], plane)
+                rings.append(np.stack([(X - F0) @ a, (X - F0) @ b], 1))
+        cs = mf.CrossSection(rings, mf.FillRule.EvenOdd).offset(0.02, mf.JoinType.Miter)
+        if cs.area() <= min_area:
+            continue
+        pr = mf.Manifold.extrude(cs, depth + lift)
+        o = F0 - depth * n
+        T = np.array([[a[0], b[0], n[0], o[0]], [a[1], b[1], n[1], o[1]], [a[2], b[2], n[2], o[2]]])
+        parts.append(pr.transform(T))
+    if not parts:
+        return None
+    return mf.Manifold.batch_boolean(parts, mf.OpType.Add)
