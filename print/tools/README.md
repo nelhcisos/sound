@@ -30,5 +30,5 @@
 ## Анаморфоза «линия из мха» — `anamorph/`
 
 Рисунок проецируется из точки обзора на выпуклые низкополигональные камни (точная видимость полигонами), мох — призмы со стенками вдоль лучей к глазу.
-`scene_moss_line.py` — сцена (камни, глаз, линия), `build.py OUT render` — расчёт и рендеры, `print_parts.py OUT_FULL OUT_PARTS` — детали, гнёзда, полости, глазок, цельная версия, `render_final.py` — картинки, `print_mono.py OUT [длина=120]` — цельная одноцветная версия (мох — канавка со штриховкой).
+`scene_moss_line.py` — сцена (камни, глаз, линия), `build.py OUT render` — расчёт и рендеры, `print_parts.py OUT_FULL OUT_PARTS` — детали, гнёзда, полости, глазок, цельная версия, `render_final.py` — картинки, `print_mono.py OUT [длина=120]` — цельная одноцветная версия (мох — канавка с точечными вдавлениями).
 Нужны `trimesh scipy shapely manifold3d matplotlib`, для рендеров — node + playwright + `npm i three@0.160.0` (путь в `THREE=.../three.module.js`).

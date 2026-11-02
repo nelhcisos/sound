@@ -16,8 +16,9 @@ import scene_moss_line as SC
 OUT = sys.argv[1]
 LEN = float(sys.argv[2]) if len(sys.argv) > 2 else 80.0
 DEPTH = 0.3     # глубина канавки мха, мм итог
-HATCH = 0.7     # период штриховки дна, мм итог
-HATCH_D = 0.5   # глубина бороздок штриховки сверх канавки
+HATCH = 0.8     # шаг лунок, мм итог
+HATCH_D = 0.5   # глубина лунок сверх канавки
+DIMPLE_D = 0.5  # диаметр лунки, мм итог
 BASE = 3.0      # толщина подложки, мм итог
 WALL = 1.2      # стенка полостей, мм итог
 DRAIN = 1.5
@@ -34,7 +35,7 @@ u = 1 / s                                          # 1 мм итога в еди
 
 plate = PP.prism(outline, -BASE * u, -0.8 * u) + PP.prism(outline.buffer(-0.8 * u), -0.8 * u, 0.0)
 rocks = mf.Manifold.batch_boolean([convex_manifold(st.clip_z(-1.0).grow(0.09)) for st in R["vis"]], mf.OpType.Add)
-# штриховка: косые полосы в плоскости изображения (период ~0.7 мм итога на скале)
+# фактура дна мха
 from shapely.geometry import box as _box
 from shapely import affinity as _aff
 dep_ref = float(np.linalg.norm(SC.LOOK - cam.E))
@@ -42,9 +43,16 @@ per = HATCH * u / dep_ref
 bx = R["pat"].bounds
 cx, cy = (bx[0] + bx[2]) / 2, (bx[1] + bx[3]) / 2
 L = max(bx[2] - bx[0], bx[3] - bx[1]) * 1.5
-stripes = unary_union([_box(cx - L + i * per, cy - L, cx - L + i * per + per * 0.5, cy + L)
-                       for i in range(int(2 * L / per) + 1)])
-stripes = _aff.rotate(stripes, 50, origin=(cx, cy))
+# вдавления: сотовая сетка круглых лунок в плоскости изображения
+_pts = []
+_r = DIMPLE_D / 2 * u / dep_ref
+for j in range(int(2 * L / (per * 0.866)) + 1):
+    yy = cy - L + j * per * 0.866
+    off = per / 2 if j % 2 else 0.0
+    for i in range(int(2 * L / per) + 1):
+        _pts.append(Point(cx - L + off + i * per, yy))
+_pts = [p for p in _pts if R["pat"].distance(p) < _r * 2]
+stripes = unary_union([p.buffer(_r, quad_segs=6) for p in _pts])
 grooves = []
 for k, M in enumerate(R["regions"]):
     if M is None or k not in R["pads"]:
