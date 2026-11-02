@@ -29,8 +29,8 @@ HERE = Path(__file__).resolve().parent
 FONT = str(HERE / "fonts" / "DejaVuSerif-Bold.ttf")
 
 WORD_A = "SOFIA"   # открывает слева тубус
-WORD_B = "APPLE"   # открывает справа потайной свиток
-ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+WORD_B = "SDES "   # открывает справа потайной свиток (5-я позиция — пустая)
+ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ "   # 27-я позиция — пустая (без буквы)
 N = len(ALPHABET)
 STEP_DEG = 360.0 / N
 
@@ -164,10 +164,10 @@ def letter_cut(ch, x_c, upright=False):
         t = bd.scale(t, by=(min(1.0, 4.4 / bb.X), min(1.0, 7.0 / bb.Y), 1.0))
         t = bd.Rot(0, 0, 90) * t
     else:
-        t = bd.Text(ch, 6.5, font_path=FONT, align=(bd.Align.CENTER, bd.Align.CENTER))
+        t = bd.Text(ch, 6.2, font_path=FONT, align=(bd.Align.CENTER, bd.Align.CENTER))
         h = t.bounding_box().size.Y
-        if h > 4.9:                   # Q, J с хвостиками — ужать, чтобы не задевать риски
-            t = bd.scale(t, 4.9 / h)
+        if h > 4.6:                   # Q, J с хвостиками — ужать, чтобы не задевать риски
+            t = bd.scale(t, 4.6 / h)
     solid = bd.extrude(bd.Plane.XZ * t, amount=3.0)       # Plane.XZ: нормаль -Y
     return bd.Pos(x_c, -(R_OUT - 0.6), 0) * solid
 
@@ -241,6 +241,8 @@ class Cryptex:
         body -= bd.extrude(face_r * (bd.Pos(0, 23.0) * num), amount=0.4)
         if letters:
             for k, ch in enumerate(ALPHABET):
+                if ch == " ":
+                    continue
                 body -= rot(self.dir * k * STEP_DEG - 90.0) * letter_cut(ch, RW / 2, self.figure)
             for k in range(N):
                 body -= rot((k + 0.5) * STEP_DEG) * rad_box(1.2, RW - 1.2, 0.4, R_OUT - 0.4, R_OUT + 1)
@@ -418,6 +420,6 @@ def export(out_dir: Path, word_a=WORD_A, word_b=WORD_B, cap_t=CAP_T):
 
 if __name__ == "__main__":
     if len(sys.argv) > 1 and sys.argv[1] == "test":
-        export(HERE.parent / "cryptex_test", WORD_A[0], WORD_B[0], cap_t=3.5)
+        export(HERE.parent / "cryptex_test", WORD_A[-1], WORD_B[-1], cap_t=3.5)
     else:
         export(HERE)
