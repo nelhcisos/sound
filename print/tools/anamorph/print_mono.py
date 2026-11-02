@@ -15,7 +15,8 @@ import scene_moss_line as SC
 
 OUT = sys.argv[1]
 LEN = float(sys.argv[2]) if len(sys.argv) > 2 else 80.0
-DEPTH = 0.3     # глубина канавки мха, мм итог
+DEPTH = float(os.environ.get("DEPTH", 0.8))  # глубина углубления мха, мм итог
+TEXTURE = os.environ.get("TEXTURE", "none")  # none — гладкое углубление, dimples — лунки на дне
 HATCH = 0.8     # шаг лунок, мм итог
 HATCH_D = 0.5   # глубина лунок сверх канавки
 DIMPLE_D = 0.5  # диаметр лунки, мм итог
@@ -60,7 +61,7 @@ for k, M in enumerate(R["regions"]):
     st = R["vis"][k]
     ff = front_facets(cam, st)
     g = moss_recess(cam, st, M, ff, depth=DEPTH * u, lift=0.3 * u)
-    h = moss_recess(cam, st, M.intersection(stripes), ff, depth=(DEPTH + HATCH_D) * u, lift=0.3 * u)
+    h = moss_recess(cam, st, M.intersection(stripes), ff, depth=(DEPTH + HATCH_D) * u, lift=0.3 * u) if TEXTURE == "dimples" else None
     for x in (g, h):
         if x is not None:
             grooves.append(x)
