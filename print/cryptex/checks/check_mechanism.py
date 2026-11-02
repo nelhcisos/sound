@@ -40,7 +40,7 @@ n = cx.n
 push_right = [C.GAP * (n - i) for i in range(n)]
 push_left = [-C.GAP * (i + 1) for i in range(n)]
 print("\nВ сборе, пересечения, мм³ (должно быть 0):")
-for code in (code_a, code_b, "X" * n, "M" * n, " " * n):
+for code in (code_a, code_b, "X" * n, "M" * n):
     for label, sh in (("кольца по центру", None), ("сдвинуты вправо", push_right), ("сдвинуты влево", push_left)):
         R = rings(code, sh)
         v = (inter(core, R + [slv, col, caps]) + inter(caps, R + [slv, col])
@@ -62,8 +62,8 @@ def sweep(part, others, direction, dist, step=1.0):
 A = C.ALPHABET
 wrong1 = code_a[:-1] + A[(A.index(code_a[-1]) + 1) % len(A)]
 wrong2 = code_b[:-1] + A[(A.index(code_b[-1]) - 1) % len(A)]
-cross = "".join(A[(A.index(code_b[i]) + 13) % len(A)] for i in range(n))   # паз B под зубом A
-cross2 = "".join(A[(A.index(code_a[i]) + 13) % len(A)] for i in range(n))  # паз A под зубом B
+cross = "".join(A[(A.index(code_b[i]) + round(C.B_ANG / C.STEP_DEG)) % len(A)] for i in range(n))   # паз B под зубом A
+cross2 = "".join(A[(A.index(code_a[i]) - round(C.B_ANG / C.STEP_DEG)) % len(A)] for i in range(n))  # паз A под зубом B
 dist = cx.x_end + 8
 for code, label in [(code_a, "код A"), (code_b, "код B"), (wrong1, "A с ошибкой в 1 букве"),
                     (wrong2, "B с ошибкой в 1 букве"), (cross, "паз B подставлен под зуб A"),

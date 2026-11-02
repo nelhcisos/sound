@@ -5,7 +5,7 @@
 
 Система координат сборки: ось вдоль X. Угол a — поворот вокруг X от +Z (верх);
 a=90 — передняя сторона (-Y), там линия чтения. Зубья тубуса A сверху (a=0),
-зубья капсулы B снизу (a=180). В каждом кольце два паза: узкий-глубокий
+зубья капсулы B сбоку (a=B_ANG=90). В каждом кольце два паза: узкий-глубокий
 (для A) и широкий-мелкий (для B), поэтому зуб A не проходит в паз B и наоборот.
 
 Под смолу: каждая деталь печатается ПРЯМО НА СТОЛЕ, БЕЗ ПОДДЕРЖЕК —
@@ -28,9 +28,9 @@ from cadgen import build123d as bd
 HERE = Path(__file__).resolve().parent
 FONT = str(HERE / "fonts" / "DejaVuSerif-Bold.ttf")
 
-WORD_A = "SOFIA"   # открывает слева тубус
-WORD_B = "ZDES "   # открывает справа потайной свиток (5-я позиция — пустая)
-ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ "   # 27-я позиция — пустая (без буквы)
+WORD_A = "LOVE"    # открывает слева тубус
+WORD_B = "ZDES"    # открывает справа потайной свиток
+ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"   # пробел в конце = пустая позиция, если нужна
 N = len(ALPHABET)
 STEP_DEG = 360.0 / N
 
@@ -61,6 +61,10 @@ W_SLOT = W_STEM + 2 * CLR_T
 # капсула B, канал под неё в тубусе, тайник A
 R_CAPS = 4.5
 Z_CAPS = -(R_CORE - R_CAPS)
+# линия зубьев капсулы B (угол от верха). Капсула строится снизу (180°) и поворачивается сюда.
+# 90° (сбоку), а не 180°: при 180° пазы для L/Z (LOVE/ZDES) на 1-м кольце налезали.
+B_ANG = 90.0
+DB = B_ANG - 180.0
 R_CAPS_IN = 3.4                        # свиток Ø6,8
 R_CH = R_CAPS + CLR_SLIDE
 R_CARGO = 13.4                         # тайник A ~Ø26
@@ -164,10 +168,10 @@ def letter_cut(ch, x_c, upright=False):
         t = bd.scale(t, by=(min(1.0, 4.4 / bb.X), min(1.0, 7.0 / bb.Y), 1.0))
         t = bd.Rot(0, 0, 90) * t
     else:
-        t = bd.Text(ch, 6.2, font_path=FONT, align=(bd.Align.CENTER, bd.Align.CENTER))
+        t = bd.Text(ch, 6.5, font_path=FONT, align=(bd.Align.CENTER, bd.Align.CENTER))
         h = t.bounding_box().size.Y
-        if h > 4.6:                   # Q, J с хвостиками — ужать, чтобы не задевать риски
-            t = bd.scale(t, 4.6 / h)
+        if h > 4.9:                   # Q, J с хвостиками — ужать, чтобы не задевать риски
+            t = bd.scale(t, 4.9 / h)
     solid = bd.extrude(bd.Plane.XZ * t, amount=3.0)       # Plane.XZ: нормаль -Y
     return bd.Pos(x_c, -(R_OUT - 0.6), 0) * solid
 
@@ -188,7 +192,7 @@ class Cryptex:
         self.figure = figure
         self.dir = -1 if figure else 1   # у вертикального алфавит слева направо
         for a, b in zip(word_a, word_b):
-            sep = ang_dist((ALPHABET.index(b) - ALPHABET.index(a)) * STEP_DEG + 180.0, 0.0)
+            sep = ang_dist((ALPHABET.index(b) - ALPHABET.index(a)) * STEP_DEG + B_ANG, 0.0)
             assert sep > 25.0, f"буквы {a}/{b}: пазы A и B наложатся — поменяй слово"
         self.x_ring0 = FL + GAP
         self.pitch = RW + GAP
@@ -204,7 +208,7 @@ class Cryptex:
     def notch_angles(self, i):
         a_ch, b_ch = ALPHABET.index(self.wa[i]), ALPHABET.index(self.wb[i])
         d = self.dir
-        return d * a_ch * STEP_DEG - 90.0, d * b_ch * STEP_DEG + 90.0   # в системе кольца
+        return d * a_ch * STEP_DEG - 90.0, d * b_ch * STEP_DEG + B_ANG - 90.0   # в системе кольца
 
     def vent_angles(self, n1, n2):
         best = None
@@ -263,7 +267,7 @@ class Cryptex:
         s -= gable(xa, W_SLOT, R_SLV_IN - 1, R_SLV_OUT + 1)
         s -= rad_box(-1, FL + 1, W_NOTCH_A, R_SLV_IN - 1, R_GROOVE)        # ворота A во фланце
         xb = self.x_fin0 - (R_FIN_TOP - R_SLV_IN) - 0.4                    # прорезь B от первого зуба
-        s -= rad_box(xb, self.x_end + 1, W_SLOT, R_SLV_IN - 1, R_SLV_OUT + 1, 180)
+        s -= rad_box(xb, self.x_end + 1, W_SLOT, R_SLV_IN - 1, R_SLV_OUT + 1, B_ANG)
         s -= edge_chamfer(0, R_SLV_IN, EF, +1, True)                        # торец на столе
         s -= vcut(0, +1, W_NOTCH_A, EF, R_SLV_IN - 1, R_GROOVE, 0)
         s -= rad_box(-1, FL + 1, 1.0, R_OUT - 0.6, R_OUT + 1, 90)           # риска линии чтения
@@ -275,10 +279,10 @@ class Cryptex:
         r_in = R_SLV_OUT + 0.1
         c = tube(r_in, R_OUT, x0, x1)
         c -= edge_chamfer(x0, R_OUT, 0.7, +1, False) + edge_chamfer(x1, R_OUT, 0.7, -1, False)
-        c -= rad_box(x0 - 1, x1 + 1, W_NOTCH_B, R_SLV_OUT - 1, R_NOTCH_B, 180)
+        c -= rad_box(x0 - 1, x1 + 1, W_NOTCH_B, R_SLV_OUT - 1, R_NOTCH_B, B_ANG)
         c -= rad_box(x0 - 1, x1 + 1, 1.0, R_OUT - 0.6, R_OUT + 1, 90)       # риска
         c -= edge_chamfer(x0, r_in, EF, +1, True)                            # торец на столе
-        c -= vcut(x0, +1, W_NOTCH_B, EF, R_SLV_OUT - 1, R_NOTCH_B, 180)
+        c -= vcut(x0, +1, W_NOTCH_B, EF, R_SLV_OUT - 1, R_NOTCH_B, B_ANG)
         c -= rad_box(x0 - 1, x0 + 0.6, 1.2, R_SLV_OUT - 1, R_OUT + 1, 0)    # вентиляция
         c.label = "collar"
         return c
@@ -292,12 +296,13 @@ class Cryptex:
     def core_tube(self):
         L = self.l_core
         t = extrude_x(bd.Circle(R_CORE) - u_profile() - cargo_profile(), 0, L)
-        for gx in self.gx:
-            t += self.tab_a(gx)
         # правый конец стоит на столе: фаски + вентиляция тайника в канал
         t -= edge_chamfer(L, R_CORE, EF, -1, False)
         t -= extrude_x(u_profile(EF), L, L - EF, taper=45) + extrude_x(u_profile(EF), L, L + 1)
         t -= bd.Pos(L, 0, -5.5) * bd.Box(1.6, 1.5, 4.0)
+        t = rot(DB) * t                                    # канал капсулы — к линии B_ANG
+        for gx in self.gx:
+            t += self.tab_a(gx)
         if self.figure:                                   # штырьки под торец-подставку
             for a in PIN_ANGLES:
                 t += rot(a) * cyl(PIN_R, -PIN_L, 0.5, z=PIN_RAD)
@@ -327,6 +332,7 @@ class Cryptex:
         # ключ под ребро бобышки торца (правый конец) и вентиляция у стола (левый конец)
         c -= bd.Pos((x1 - BOSS_H - 0.4 + x1 + 1) / 2, 0, Z_CAPS - 3.7) * bd.Box(BOSS_H + 1.4, 1.6, 1.4)
         c -= bd.Pos(x0 + 0.6, 0, Z_CAPS + 4.0) * bd.Box(1.2 + 0.01, 1.5, 2.0)
+        c = rot(DB) * c
         c.label = "capsule_B_tube"
         return c
 
@@ -359,7 +365,7 @@ class Cryptex:
     def cap_a(self):
         if self.figure:
             return self.cap_a_figure()
-        c = self.cap_disc(0.0, -1) + extrude_x(cargo_profile(-CLR_GLUE), 0, BOSS_H)
+        c = self.cap_disc(0.0, -1) + rot(DB) * extrude_x(cargo_profile(-CLR_GLUE), 0, BOSS_H)
         c.label = "cap_A"
         return c
 
@@ -367,7 +373,7 @@ class Cryptex:
         x1 = self.xc1
         boss = extrude_x(bd.Pos(0, Z_CAPS) * bd.Circle(R_CAPS_IN - CLR_GLUE), x1, x1 - BOSS_H)
         rib = bd.Pos(x1 - BOSS_H / 2, 0, Z_CAPS - 3.6) * bd.Box(BOSS_H, 1.6 - 2 * CLR_GLUE, 1.3)
-        c = self.cap_disc(x1, +1) + boss + rib
+        c = self.cap_disc(x1, +1) + rot(DB) * (boss + rib)
         c.label = "cap_B"
         return c
 
@@ -387,7 +393,7 @@ class Cryptex:
         parts["sleeve"] = down_left * self.sleeve()
         parts["collar"] = bd.Pos(0, 0, -self.x_collar) * (down_left * self.collar())
         parts["core_A_tube"] = bd.Pos(0, 0, self.l_core) * (down_right * self.core_tube())
-        brim = cyl(9.0, self.xc0 - 0.8, self.xc0 + 0.01, z=Z_CAPS)  # отламываемая «юбка» под тонкую капсулу
+        brim = rot(DB) * cyl(9.0, self.xc0 - 0.8, self.xc0 + 0.01, z=Z_CAPS)  # отламываемая «юбка» под тонкую капсулу
         parts["capsule_B_tube"] = bd.Pos(0, 0, -(self.xc0 - 0.8)) * (down_left * (self.capsule_tube() + brim))
         if self.figure:      # гладкой внутренней стороной на стол, гнёзда под фигурку вверх
             parts["cap_A"] = down_right * self.cap_a()

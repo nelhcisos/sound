@@ -29,9 +29,9 @@ def plate(folder, cells, out):
 
 full = HERE
 plate(full, {(0, 0): ["sleeve"], (1, 0): ["core_A_tube"], (2, 0): ["ring_1"], (3, 0): ["ring_2"],
-             (0, 1): ["collar", "capsule_B_tube"], (1, 1): ["ring_3"], (2, 1): ["ring_4"], (3, 1): ["ring_5"]},
+             (0, 1): ["collar", "capsule_B_tube"], (1, 1): ["ring_3"], (2, 1): ["ring_4"], (3, 1): ["cap_A"]},
       HERE / "plates" / "saturn_plate1_main.stl")
-plate(full, {(1, 0): ["cap_A"], (2, 0): ["cap_B"]}, HERE / "plates" / "saturn_plate2_caps.stl")
+plate(full, {(1, 0): ["cap_B"]}, HERE / "plates" / "saturn_plate2_capB.stl")
 test = HERE.parent / "cryptex_test"
 plate(test, {(0, 0): ["sleeve"], (1, 0): ["core_A_tube"], (2, 0): ["ring_1"], (3, 0): ["collar", "capsule_B_tube"],
              (1, 1): ["cap_A"], (2, 1): ["cap_B"]}, test / "plate" / "saturn_plate_test.stl")
