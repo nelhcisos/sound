@@ -29,7 +29,7 @@ HERE = Path(__file__).resolve().parent
 FONT = str(HERE / "fonts" / "DejaVuSerif-Bold.ttf")
 
 WORD_A = "SOFIA"   # открывает слева тубус
-WORD_B = "SDES "   # открывает справа потайной свиток (5-я позиция — пустая)
+WORD_B = "ZDES "   # открывает справа потайной свиток (5-я позиция — пустая)
 ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ "   # 27-я позиция — пустая (без буквы)
 N = len(ALPHABET)
 STEP_DEG = 360.0 / N
