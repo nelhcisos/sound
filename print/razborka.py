@@ -499,21 +499,27 @@ if cfg.get("hollow"):
 MIN_T = cfg.get("min_thickness", 0.3)
 
 
-def clean_thin(M, pitch=0.06):
+def clean_thin(M, pitch=0.07):
+    import gc
     r = MIN_T / 2; margin = 0.12
     tm, _ = to_tm(M)
     vx = tm.voxelized(pitch).fill()
     occ = np.pad(vx.matrix, 4); org = vx.transform[:3, 3] - 4 * pitch
-    core = ndimage.distance_transform_edt(occ) * pitch > r
+    del vx, tm; gc.collect()
+    core = (ndimage.distance_transform_edt(occ).astype(np.float32) * pitch) > r
+    del occ; gc.collect()
     if not core.any():
         return None, 0.0
-    g = ndimage.distance_transform_edt(~core) * pitch - (r + margin)   # <0 внутри «раскрытой» детали + запас
-    g = ndimage.gaussian_filter(g.astype(np.float32), 0.8)
+    g = ndimage.distance_transform_edt(~core).astype(np.float32) * pitch - (r + margin)
+    del core; gc.collect()
+    g = ndimage.gaussian_filter(g, 0.8)
     v, f, _, _ = measure.marching_cubes(g, 0.0)
+    del g; gc.collect()
     mk = trimesh.Trimesh(v * pitch + org, f)
     if mk.volume < 0:
         mk.invert()
     C = M ^ from_tm(mk)
+    del mk; gc.collect()
     keep = [q for q in C.decompose() if q.volume() > 0.5]
     C = m3.Manifold.batch_boolean(keep, m3.OpType.Add) if len(keep) > 1 else (keep[0] if keep else C)
     return C, M.volume() - C.volume()
