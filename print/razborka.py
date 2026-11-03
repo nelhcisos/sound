@@ -495,6 +495,36 @@ if cfg.get("hollow"):
         parts[p] = M
         log(f"{PARTS[p]}: полость {total:.0f} мм³, сливов {holes}")
 
+# ---------- чистка: только объёмные тела (всё тоньше MIN_T срезаем) ----------
+MIN_T = cfg.get("min_thickness", 0.3)
+
+
+def clean_thin(M, pitch=0.06):
+    r = MIN_T / 2; margin = 0.12
+    tm, _ = to_tm(M)
+    vx = tm.voxelized(pitch).fill()
+    occ = np.pad(vx.matrix, 4); org = vx.transform[:3, 3] - 4 * pitch
+    core = ndimage.distance_transform_edt(occ) * pitch > r
+    if not core.any():
+        return None, 0.0
+    g = ndimage.distance_transform_edt(~core) * pitch - (r + margin)   # <0 внутри «раскрытой» детали + запас
+    g = ndimage.gaussian_filter(g.astype(np.float32), 0.8)
+    v, f, _, _ = measure.marching_cubes(g, 0.0)
+    mk = trimesh.Trimesh(v * pitch + org, f)
+    if mk.volume < 0:
+        mk.invert()
+    C = M ^ from_tm(mk)
+    keep = [q for q in C.decompose() if q.volume() > 0.5]
+    C = m3.Manifold.batch_boolean(keep, m3.OpType.Add) if len(keep) > 1 else (keep[0] if keep else C)
+    return C, M.volume() - C.volume()
+
+
+for p in list(parts):
+    C, lost = clean_thin(parts[p])
+    if C is not None:
+        parts[p] = C
+        log(f"{PARTS[p]}: срезано тонких плёнок {lost:.2f} мм³")
+
 # ---------- экспорт ----------
 outs = []
 for p in sorted(parts):
@@ -505,25 +535,12 @@ for p in sorted(parts):
     if len(cs) > 1:
         tm = trimesh.util.concatenate([c for c in cs if abs(c.volume) > 0.5])
         tm.merge_vertices()
-    # точки самокасания (ребро у 4 граней) — заделываем перемычками 0,2 мм
-    for _fix in range(4):
-        u_, c_ = np.unique(tm.edges_sorted, axis=0, return_counts=True)
-        bad = u_[c_ != 2]
-        if not len(bad):
-            break
-        pts = tm.vertices[bad].mean(1)
-        grp = np.unique(np.round(pts / 0.3).astype(int), axis=0, return_inverse=True)[1].ravel()
-        keys = np.array([pts[grp == g_].mean(0) for g_ in np.unique(grp)])
-        sph = [m3.Manifold.sphere(0.25, 12).translate(tuple(k)) for k in keys]
-        parts[p] = M2 = parts[p] + m3.Manifold.batch_boolean(sph, m3.OpType.Add)
-        tm, _ = to_tm(M2); tm.merge_vertices()
-        cs = tm.split(only_watertight=False)
-        if len(cs) > 1:
-            tm = trimesh.util.concatenate([c for c in cs if abs(c.volume) > 0.5]); tm.merge_vertices()
+    u_, c_ = np.unique(tm.edges_sorted, axis=0, return_counts=True)
+    nonman = int((c_ != 2).sum())
     fn = OUT / f"{NAME}_{p + 1}_{PARTS[p]}.stl"
     tm.export(fn)
     outs.append(tm)
-    log(fn.name, tm.extents.round(1), "замкнута:", tm.is_watertight, "кусков:", len(parts[p].decompose()),
+    log(fn.name, tm.extents.round(1), "замкнута:", tm.is_watertight, "плохих рёбер:", nonman, "кусков:", len(tm.split(only_watertight=False)),
         "смола %.2f см³" % (parts[p].volume() / 1000))
 order = sorted(range(len(outs)), key=lambda i: -outs[i].extents[1])
 x = y = rowh = 0; plate = []
