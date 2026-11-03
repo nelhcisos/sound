@@ -248,6 +248,14 @@ def plane_cutter(cut, ext):
 
 # ---------- разрезы ----------
 parts = {cfg["root"]: M0}
+DUMP = OUT / "after_pegs.npz"
+REUSE = "--reuse" in sys.argv and DUMP.exists()   # повторить только чистку/экспорт по сохранённым разрезам и штифтам
+if REUSE:
+    z_ = np.load(DUMP)
+    parts = {int(k[1:]): m3.Manifold(m3.Mesh(vert_properties=z_[k], tri_verts=z_["t" + k[1:]]))
+             for k in z_.files if k.startswith("v")}
+    cfg["cuts"] = []; cfg["pegs"] = {}
+    log("загружены разрезы и штифты из", DUMP.name)
 cut_info = {}  # (child, from) -> id резака
 ext = float(np.abs(m.bounds).max() * 2 + 10)
 for cut in cfg["cuts"]:
@@ -439,6 +447,14 @@ for chs, par in cfg["pegs"].items():
     sz = f"квадрат {r * np.sqrt(2):.1f}×{r * np.sqrt(2):.1f}" if PEG_SHAPE == "square" else f"Ø{2 * r:.1f}"
     log(f"{PARTS[ch]} -> {PARTS[par]}: штифт {sz} × {L:.1f} мм, корень {root:.1f} мм, площадка r={inr:.1f}")
 
+if not REUSE:
+    arr = {}
+    for p, M in parts.items():
+        mg = M.to_mesh()
+        arr[f"v{p}"] = np.asarray(mg.vert_properties)[:, :3].astype(np.float32)
+        arr[f"t{p}"] = np.asarray(mg.tri_verts).astype(np.uint32)
+    np.savez(DUMP, **arr)
+
 # ---------- полости ----------
 if cfg.get("hollow"):
     P = 0.1
@@ -545,6 +561,92 @@ for p in list(parts):
     if C is not None:
         parts[p] = C
         log(f"{PARTS[p]}: срезано тонких плёнок {lost:.2f} мм³")
+
+# ---------- самокасания: заполняем узкую щель изнутри (без наружных добавок) ----------
+def bad_edge_points(M):
+    tm, _ = to_tm(M); tm.merge_vertices()
+    u_, c_ = np.unique(tm.edges_sorted, axis=0, return_counts=True)
+    bad = u_[c_ != 2]
+    return tm.vertices[bad].mean(1) if len(bad) else np.zeros((0, 3))
+
+
+def fix_pinches(M, pitch=0.025, half=0.5):
+    """Самокасания/прорези нулевой ширины: маленький кубик вокруг точки пересобираем гладко
+    (по заполненности с шагом 0,025 мм) — прорезь закрывается, форма меняется < 0,02 мм."""
+    for it in range(3):
+        pts = bad_edge_points(M)
+        if not len(pts):
+            return M, it
+        grp = np.unique(np.round(pts / half).astype(int), axis=0, return_inverse=True)[1].ravel()
+        centers = np.array([pts[grp == g_].mean(0) for g_ in np.unique(grp)])
+        for c in centers:
+            lo = c - half
+            B = m3.Manifold.cube((2 * half, 2 * half, 2 * half)).translate(tuple(lo))
+            W = M ^ B
+            if W.is_empty():
+                continue
+            P_ = 3
+            n = int(round(2 * half / pitch))
+            org = lo + pitch / 2 - P_ * pitch
+            occ = np.zeros((n + 2 * P_,) * 3, bool)
+            for k in range(P_, n + P_):
+                z = org[2] + k * pitch
+                img = np.zeros(occ.shape[:2], bool)
+                for poly in W.slice(z).to_polygons():
+                    rr, cc_ = draw.polygon((poly[:, 0] - org[0]) / pitch, (poly[:, 1] - org[1]) / pitch, img.shape)
+                    img[rr, cc_] ^= True
+                occ[:, :, k] = img
+            # материал у граней кубика продлеваем наружу, чтобы новая поверхность не обрывалась у стенок
+            occ[:P_] = occ[P_]; occ[-P_:] = occ[-P_ - 1]
+            occ[:, :P_] = occ[:, P_:P_ + 1]; occ[:, -P_:] = occ[:, -P_ - 1:-P_]
+            occ[:, :, :P_] = occ[:, :, P_:P_ + 1]; occ[:, :, -P_:] = occ[:, :, -P_ - 1:-P_]
+            f = (ndimage.distance_transform_edt(occ) - ndimage.distance_transform_edt(~occ)).astype(np.float32)
+            f = ndimage.gaussian_filter(f, 0.8)
+            f = np.pad(f, 1, constant_values=-5)
+            try:
+                v, fc, _, _ = measure.marching_cubes(f, 0.0)
+            except Exception:
+                continue
+            tm = trimesh.Trimesh((v - 1) * pitch + org, fc)
+            if tm.volume < 0:
+                tm.invert()
+            V = from_tm(tm) ^ B
+            M = (M - B) + V
+    return M, 3
+
+
+for p in list(parts):
+    n0 = len(bad_edge_points(parts[p]))
+    if n0:
+        parts[p], its = fix_pinches(parts[p])
+        log(f"{PARTS[p]}: самокасаний {n0} -> {len(bad_edge_points(parts[p]))}")
+
+# крошки: касаются соседа — к нему, висят отдельно — в мусор
+for p in list(parts):
+    comps = sorted(parts[p].decompose(), key=lambda q: -q.volume())
+    if len(comps) < 2:
+        continue
+    main, rest = comps[0], comps[1:]
+    keep = [main]
+    for fr_ in rest:
+        if fr_.volume() > 0.3 * main.volume():
+            keep.append(fr_); continue
+        tc, _ = to_tm(fr_)
+        pts = tc.vertices[::max(1, len(tc.vertices) // 300)]
+        best, bv = None, 0
+        for q in parts:
+            if q == p:
+                continue
+            tq, _ = to_tm(parts[q])
+            sc_ = (cKDTree(tq.vertices).query(pts)[0] < 0.05).sum()
+            if sc_ > bv:
+                best, bv = q, sc_
+        if best is not None:
+            parts[best] = parts[best] + fr_
+            log(f"крошка {fr_.volume():.2f} мм³: {PARTS[p]} -> {PARTS[best]}")
+        else:
+            log(f"крошка {fr_.volume():.2f} мм³ у {PARTS[p]} висит отдельно — убрана")
+    parts[p] = m3.Manifold.batch_boolean(keep, m3.OpType.Add) if len(keep) > 1 else keep[0]
 
 # ---------- экспорт ----------
 outs = []
