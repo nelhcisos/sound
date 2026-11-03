@@ -499,13 +499,28 @@ if cfg.get("hollow"):
 MIN_T = cfg.get("min_thickness", 0.3)
 
 
+def occupancy(M, pitch, pad=4):
+    """Заполненность по слоям: точное сечение детали на каждой высоте, заливка even-odd."""
+    x0, y0, z0, x1, y1, z1 = M.bounding_box()
+    org = np.array([x0, y0, z0]) - pad * pitch + pitch / 2
+    n = np.ceil((np.array([x1, y1, z1]) - org) / pitch).astype(int) + pad + 1
+    occ = np.zeros(n, bool)
+    for k in range(n[2]):
+        z = org[2] + k * pitch
+        if z <= z0 or z >= z1:
+            continue
+        img = np.zeros(n[:2], bool)
+        for poly in M.slice(z).to_polygons():
+            rr, cc_ = draw.polygon((poly[:, 0] - org[0]) / pitch, (poly[:, 1] - org[1]) / pitch, n[:2])
+            img[rr, cc_] ^= True
+        occ[:, :, k] = img
+    return occ, org
+
+
 def clean_thin(M, pitch=0.07):
     import gc
     r = MIN_T / 2; margin = 0.12
-    tm, _ = to_tm(M)
-    vx = tm.voxelized(pitch).fill()
-    occ = np.pad(vx.matrix, 4); org = vx.transform[:3, 3] - 4 * pitch
-    del vx, tm; gc.collect()
+    occ, org = occupancy(M, pitch)
     core = (ndimage.distance_transform_edt(occ).astype(np.float32) * pitch) > r
     del occ; gc.collect()
     if not core.any():
