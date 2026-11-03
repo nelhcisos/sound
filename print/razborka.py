@@ -565,12 +565,27 @@ for p in list(parts):
 # ---------- самокасания: заполняем узкую щель изнутри (без наружных добавок) ----------
 def bad_edge_points(M):
     tm, _ = to_tm(M); tm.merge_vertices()
+    cs = tm.split(only_watertight=False)
+    if len(cs) > 1:  # как при экспорте: без пылинок
+        tm = trimesh.util.concatenate([c for c in cs if abs(c.volume) > 0.5]); tm.merge_vertices()
     u_, c_ = np.unique(tm.edges_sorted, axis=0, return_counts=True)
     bad = u_[c_ != 2]
     return tm.vertices[bad].mean(1) if len(bad) else np.zeros((0, 3))
 
 
 def fix_pinches(M, pitch=0.025, half=0.5):
+    best = M; nb = len(bad_edge_points(M))
+    for h in (half, 0.8, 1.2):
+        M2, _ = _fix_pinches(best, pitch, h)
+        n2 = len(bad_edge_points(M2))
+        if n2 < nb:
+            best, nb = M2, n2
+        if nb == 0:
+            break
+    return best, nb
+
+
+def _fix_pinches(M, pitch=0.025, half=0.5):
     """Самокасания/прорези нулевой ширины: маленький кубик вокруг точки пересобираем гладко
     (по заполненности с шагом 0,025 мм) — прорезь закрывается, форма меняется < 0,02 мм."""
     for it in range(3):
