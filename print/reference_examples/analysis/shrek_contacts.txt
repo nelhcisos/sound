@@ -1,0 +1,24 @@
+
+shrek_body <-> shrek_cloak : contact 1962 mm2 (on shrek_body), flat(<0.3mm)=16%, faces||plane=50%, gap p10/50/90=0.08/0.20/0.37, normal=[-0.08  0.73 -0.68]
+   feature area 878 mm2 depth -3.6..+6.0 mm (+ = toward shrek_cloak) inplane 33.2 x 32.9 mm at (-17,0)
+   feature area 379 mm2 depth -2.8..+2.9 mm (+ = toward shrek_cloak) inplane 24.7 x 28.1 mm at (15,-7)
+   feature area 185 mm2 depth +0.5..+2.4 mm (+ = toward shrek_cloak) inplane 14.7 x 18.9 mm at (5,9)
+
+shrek_body <-> shrek_face : contact 245 mm2 (on shrek_body), flat(<0.3mm)=22%, faces||plane=8%, gap p10/50/90=0.02/0.04/0.27, normal=[ 0.01 -0.92  0.39]
+   feature area 130 mm2 depth -1.9..+3.0 mm (+ = toward shrek_face) inplane 6.5 x 14.0 mm at (5,-1)
+   feature area 14 mm2 depth -1.3..+1.5 mm (+ = toward shrek_face) inplane 3.2 x 4.9 mm at (-7,-5)
+   feature area 13 mm2 depth -1.2..+1.5 mm (+ = toward shrek_face) inplane 2.9 x 4.0 mm at (-5,6)
+
+shrek_cloak <-> shrek_hands : contact 258 mm2 (on shrek_cloak), flat(<0.3mm)=41%, faces||plane=49%, gap p10/50/90=0.03/0.09/0.36, normal=[ 0.14 -0.92  0.37]
+   feature area 42 mm2 depth -1.7..-0.5 mm (+ = toward shrek_hands) inplane 6.5 x 9.7 mm at (29,1)
+   feature area 36 mm2 depth -2.2..+1.2 mm (+ = toward shrek_hands) inplane 6.2 x 9.4 mm at (-14,1)
+   feature area 27 mm2 depth -2.8..+1.3 mm (+ = toward shrek_hands) inplane 8.7 x 8.1 mm at (-24,2)
+   feature area 5 mm2 depth +0.5..+0.8 mm (+ = toward shrek_hands) inplane 0.9 x 4.2 mm at (21,-0)
+
+shrek_cloak <-> shrek_stand : contact 2232 mm2 (on shrek_cloak), flat(<0.3mm)=98%, faces||plane=95%, gap p10/50/90=0.08/0.20/0.36, normal=[-0.  0. -1.]
+
+shrek_cloak <-> shrek_toesies : contact 359 mm2 (on shrek_cloak), flat(<0.3mm)=19%, faces||plane=8%, gap p10/50/90=0.02/0.06/0.23, normal=[ 0.12 -0.99 -0.1 ]
+   feature area 197 mm2 depth -6.0..+3.2 mm (+ = toward shrek_toesies) inplane 11.7 x 12.9 mm at (5,1)
+   feature area 56 mm2 depth -2.8..+2.0 mm (+ = toward shrek_toesies) inplane 10.5 x 6.5 mm at (-15,1)
+
+shrek_stand <-> shrek_toesies : contact 42 mm2 (on shrek_stand), flat(<0.3mm)=89%, faces||plane=47%, gap p10/50/90=0.05/0.24/0.53, normal=[ 0.02 -0.08  1.  ]
