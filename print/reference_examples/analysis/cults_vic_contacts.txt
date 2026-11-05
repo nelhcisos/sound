@@ -1,0 +1,42 @@
+
+Base <-> PiernaDRCH : contact 177 mm2 (on Base), flat(<0.3mm)=19%, faces||plane=17%, gap p10/50/90=0.08/0.19/0.33, normal=[ 0.03 -0.09  1.  ]
+   feature area 123 mm2 depth -1.8..+2.7 mm (+ = toward PiernaDRCH) inplane 9.3 x 11.4 mm at (1,0)
+
+Base <-> PiernaIZQ : contact 265 mm2 (on Base), flat(<0.3mm)=22%, faces||plane=40%, gap p10/50/90=0.07/0.21/0.38, normal=[0.02 0.02 1.  ]
+   feature area 126 mm2 depth -1.5..+3.1 mm (+ = toward PiernaIZQ) inplane 13.2 x 9.6 mm at (-8,-1)
+   feature area 28 mm2 depth -0.7..+0.6 mm (+ = toward PiernaIZQ) inplane 7.6 x 9.3 mm at (7,2)
+
+Cuerpo <-> Falda : contact 472 mm2 (on Cuerpo), flat(<0.3mm)=16%, faces||plane=10%, gap p10/50/90=0.08/0.19/0.44, normal=[ 0.05  0.24 -0.97]
+   feature area 336 mm2 depth -4.6..+4.1 mm (+ = toward Falda) inplane 27.9 x 24.1 mm at (2,-4)
+   feature area 3 mm2 depth -3.0..-1.4 mm (+ = toward Falda) inplane 1.3 x 4.7 mm at (4,1)
+
+Cuerpo <-> Rostro : contact 216 mm2 (on Cuerpo), flat(<0.3mm)=9%, faces||plane=4%, gap p10/50/90=0.05/0.18/0.45, normal=[ 0.23 -0.85  0.48]
+   feature area 184 mm2 depth -3.5..+4.5 mm (+ = toward Rostro) inplane 11.7 x 8.3 mm at (-1,-1)
+
+Cuerpo <-> brazo : contact 88 mm2 (on Cuerpo), flat(<0.3mm)=12%, faces||plane=11%, gap p10/50/90=0.04/0.15/0.29, normal=[-0.09 -0.13 -0.99]
+   feature area 67 mm2 depth -3.1..+2.6 mm (+ = toward brazo) inplane 6.9 x 7.4 mm at (-1,0)
+
+Cuerpo <-> cabello1 : contact 37 mm2 (on Cuerpo), flat(<0.3mm)=24%, faces||plane=19%, gap p10/50/90=0.15/0.32/0.54, normal=[-0.32  0.94 -0.13]
+   feature area 18 mm2 depth -2.0..+1.0 mm (+ = toward cabello1) inplane 6.1 x 4.3 mm at (-1,-0)
+
+Cuerpo <-> cabello2 : contact 34 mm2 (on Cuerpo), flat(<0.3mm)=69%, faces||plane=34%, gap p10/50/90=0.13/0.30/0.53, normal=[0.8  0.57 0.17]
+   feature area 2 mm2 depth -0.7..-0.5 mm (+ = toward cabello2) inplane 1.7 x 3.2 mm at (-1,0)
+
+Falda <-> PiernaDRCH : contact 498 mm2 (on Falda), flat(<0.3mm)=6%, faces||plane=26%, gap p10/50/90=0.10/0.35/0.45, normal=[-0.09 -0.04 -1.  ]
+   feature area 446 mm2 depth -7.2..+2.9 mm (+ = toward PiernaDRCH) inplane 17.4 x 15.0 mm at (-2,1)
+
+Falda <-> PiernaIZQ : contact 339 mm2 (on Falda), flat(<0.3mm)=10%, faces||plane=35%, gap p10/50/90=0.10/0.29/0.43, normal=[ 0.09 -0.16 -0.98]
+   feature area 277 mm2 depth -5.6..+2.4 mm (+ = toward PiernaIZQ) inplane 15.4 x 13.5 mm at (-3,1)
+
+Rostro <-> cabello1 : contact 622 mm2 (on Rostro), flat(<0.3mm)=7%, faces||plane=9%, gap p10/50/90=0.13/0.19/0.33, normal=[-0.97 -0.1   0.2 ]
+   feature area 552 mm2 depth -9.1..+4.7 mm (+ = toward cabello1) inplane 21.4 x 20.2 mm at (0,-1)
+   feature area 2 mm2 depth +1.0..+1.6 mm (+ = toward cabello1) inplane 1.3 x 1.4 mm at (1,-13)
+
+Rostro <-> cabello2 : contact 482 mm2 (on Rostro), flat(<0.3mm)=9%, faces||plane=8%, gap p10/50/90=0.12/0.19/0.34, normal=[0.98 0.22 0.  ]
+   feature area 408 mm2 depth -5.5..+3.7 mm (+ = toward cabello2) inplane 21.7 x 19.1 mm at (-1,-1)
+   feature area 1 mm2 depth -4.0..-3.1 mm (+ = toward cabello2) inplane 1.4 x 1.1 mm at (-13,6)
+
+cabello1 <-> cabello2 : contact 215 mm2 (on cabello1), flat(<0.3mm)=21%, faces||plane=56%, gap p10/50/90=0.06/0.15/0.45, normal=[ 0.97  0.24 -0.03]
+   feature area 78 mm2 depth -2.1..+1.2 mm (+ = toward cabello2) inplane 8.9 x 22.2 mm at (-11,-4)
+   feature area 33 mm2 depth -2.5..-0.5 mm (+ = toward cabello2) inplane 15.4 x 10.4 mm at (4,5)
+   feature area 26 mm2 depth +0.5..+1.3 mm (+ = toward cabello2) inplane 6.4 x 7.9 mm at (10,-8)

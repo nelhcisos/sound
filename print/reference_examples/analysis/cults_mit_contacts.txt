@@ -1,0 +1,43 @@
+
+Arm_L <-> Cape : contact 696 mm2 (on Arm_L), flat(<0.3mm)=15%, faces||plane=45%, gap p10/50/90=0.09/0.22/0.38, normal=[-0.61  0.04 -0.79]
+   feature area 486 mm2 depth -4.8..+3.6 mm (+ = toward Cape) inplane 30.4 x 24.0 mm at (2,0)
+   feature area 26 mm2 depth -1.3..-0.5 mm (+ = toward Cape) inplane 5.0 x 10.3 mm at (-11,-1)
+
+Arm_L <-> Saya_w_Hand : contact 69 mm2 (on Arm_L), flat(<0.3mm)=37%, faces||plane=38%, gap p10/50/90=0.05/0.10/0.34, normal=[ 0.26 -0.93  0.26]
+   feature area 34 mm2 depth -2.9..+1.2 mm (+ = toward Saya_w_Hand) inplane 5.3 x 5.3 mm at (-1,-2)
+
+Arm_R <-> Cape : contact 491 mm2 (on Arm_R), flat(<0.3mm)=12%, faces||plane=28%, gap p10/50/90=0.12/0.23/0.39, normal=[-0.06 -0.88  0.47]
+   feature area 394 mm2 depth -6.1..+2.9 mm (+ = toward Cape) inplane 21.3 x 18.6 mm at (1,-0)
+
+Arm_R <-> Katana_w_Hand : contact 74 mm2 (on Arm_R), flat(<0.3mm)=14%, faces||plane=0%, gap p10/50/90=0.08/0.18/0.38, normal=[ 0.1  -0.31 -0.95]
+   feature area 57 mm2 depth -2.8..+2.9 mm (+ = toward Katana_w_Hand) inplane 6.4 x 6.5 mm at (-1,0)
+
+Braid_Back <-> Head : contact 382 mm2 (on Braid_Back), flat(<0.3mm)=11%, faces||plane=23%, gap p10/50/90=0.10/0.19/0.35, normal=[ 0.57  0.8  -0.17]
+   feature area 315 mm2 depth -5.0..+3.4 mm (+ = toward Head) inplane 18.4 x 15.6 mm at (-2,0)
+
+Braid_L <-> Head : contact 317 mm2 (on Braid_L), flat(<0.3mm)=7%, faces||plane=1%, gap p10/50/90=0.10/0.19/0.34, normal=[-0.98  0.16  0.09]
+   feature area 283 mm2 depth -5.8..+6.8 mm (+ = toward Head) inplane 13.8 x 13.0 mm at (-0,1)
+
+Braid_R <-> Head : contact 320 mm2 (on Braid_R), flat(<0.3mm)=7%, faces||plane=1%, gap p10/50/90=0.09/0.18/0.34, normal=[ 0.32 -0.61  0.72]
+   feature area 283 mm2 depth -4.8..+5.0 mm (+ = toward Head) inplane 15.4 x 13.5 mm at (0,-1)
+
+Bust <-> Cape : contact 886 mm2 (on Bust), flat(<0.3mm)=6%, faces||plane=6%, gap p10/50/90=0.09/0.21/0.39, normal=[ 0.62 -0.32 -0.72]
+   feature area 799 mm2 depth -9.4..+6.5 mm (+ = toward Cape) inplane 28.5 x 26.9 mm at (0,0)
+
+Bust <-> Head : contact 129 mm2 (on Bust), flat(<0.3mm)=24%, faces||plane=7%, gap p10/50/90=0.09/0.22/0.46, normal=[-0.06  0.91  0.41]
+   feature area 76 mm2 depth -3.7..+2.1 mm (+ = toward Head) inplane 9.1 x 8.7 mm at (2,-2)
+   feature area 4 mm2 depth -1.4..-0.5 mm (+ = toward Head) inplane 1.4 x 4.8 mm at (-5,1)
+
+Bust <-> Skirt : contact 460 mm2 (on Bust), flat(<0.3mm)=19%, faces||plane=33%, gap p10/50/90=0.11/0.23/0.40, normal=[-0.2  -0.89 -0.4 ]
+   feature area 323 mm2 depth -6.7..+2.9 mm (+ = toward Skirt) inplane 22.9 x 17.7 mm at (4,1)
+
+Hair_FrontBang <-> Head : contact 111 mm2 (on Hair_FrontBang), flat(<0.3mm)=22%, faces||plane=8%, gap p10/50/90=0.07/0.20/0.48, normal=[ 0.5  -0.23 -0.84]
+   feature area 74 mm2 depth -2.3..+2.3 mm (+ = toward Head) inplane 21.2 x 10.7 mm at (1,0)
+   feature area 1 mm2 depth -2.1..-1.5 mm (+ = toward Head) inplane 0.8 x 0.9 mm at (3,13)
+
+Leg_L <-> Skirt : contact 661 mm2 (on Leg_L), flat(<0.3mm)=12%, faces||plane=50%, gap p10/50/90=0.11/0.22/0.40, normal=[ 0.63  0.56 -0.54]
+   feature area 495 mm2 depth -4.2..+7.3 mm (+ = toward Skirt) inplane 24.6 x 19.9 mm at (5,6)
+   feature area 31 mm2 depth +0.5..+1.0 mm (+ = toward Skirt) inplane 14.5 x 5.1 mm at (0,-6)
+
+Leg_R <-> Skirt : contact 701 mm2 (on Leg_R), flat(<0.3mm)=12%, faces||plane=53%, gap p10/50/90=0.11/0.21/0.39, normal=[-0.34  0.49  0.81]
+   feature area 532 mm2 depth -2.9..+6.7 mm (+ = toward Skirt) inplane 24.5 x 24.0 mm at (0,6)

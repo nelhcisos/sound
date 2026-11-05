@@ -1,0 +1,151 @@
+
+backHair <-> cap : contact 89 mm2 (on backHair), flat(<0.3mm)=33%, faces||plane=32%, gap p10/50/90=0.12/0.24/0.48, normal=[-0.21 -0.9   0.37]
+   feature area 40 mm2 depth -0.6..+3.2 mm (+ = toward cap) inplane 15.2 x 6.2 mm at (-0,1)
+
+backHair <-> face1 : contact 542 mm2 (on backHair), flat(<0.3mm)=19%, faces||plane=44%, gap p10/50/90=0.09/0.17/0.29, normal=[-0.74  0.16  0.65]
+   feature area 350 mm2 depth -5.4..+3.4 mm (+ = toward face1) inplane 22.6 x 17.6 mm at (-1,0)
+
+backHair <-> frontHair : contact 96 mm2 (on backHair), flat(<0.3mm)=79%, faces||plane=54%, gap p10/50/90=0.06/0.18/0.49, normal=[-0.74  0.11  0.67]
+   feature area 10 mm2 depth -1.1..-0.5 mm (+ = toward frontHair) inplane 21.1 x 10.8 mm at (1,-3)
+
+backHair <-> hat : contact 90 mm2 (on backHair), flat(<0.3mm)=29%, faces||plane=0%, gap p10/50/90=0.06/0.18/0.50, normal=[ 0.07  0.94 -0.34]
+   feature area 43 mm2 depth -1.6..+1.5 mm (+ = toward hat) inplane 17.3 x 11.6 mm at (0,1)
+   feature area 6 mm2 depth -1.7..+0.9 mm (+ = toward hat) inplane 2.3 x 3.8 mm at (8,-8)
+
+backHair <-> leftHair : contact 36 mm2 (on backHair), flat(<0.3mm)=42%, faces||plane=37%, gap p10/50/90=0.03/0.09/0.49, normal=[-0.65 -0.74 -0.17]
+   feature area 5 mm2 depth -0.6..+0.8 mm (+ = toward leftHair) inplane 4.0 x 3.5 mm at (-1,0)
+   feature area 1 mm2 depth +0.5..+0.9 mm (+ = toward leftHair) inplane 0.7 x 1.0 mm at (5,0)
+
+backHair <-> rightHair : contact 32 mm2 (on backHair), flat(<0.3mm)=44%, faces||plane=48%, gap p10/50/90=0.04/0.11/0.48, normal=[ 0.38 -0.46  0.8 ]
+   feature area 9 mm2 depth -0.5..+0.7 mm (+ = toward rightHair) inplane 3.3 x 3.7 mm at (0,0)
+
+bag_A <-> bag_B : contact 1214 mm2 (on bag_A), flat(<0.3mm)=43%, faces||plane=45%, gap p10/50/90=0.10/0.26/0.42, normal=[ 0.99  0.03 -0.1 ]
+   feature area 448 mm2 depth -4.8..-0.5 mm (+ = toward bag_B) inplane 32.3 x 33.1 mm at (2,0)
+   feature area 208 mm2 depth +0.5..+5.8 mm (+ = toward bag_B) inplane 9.3 x 9.1 mm at (1,1)
+
+bag_A <-> base : contact 265 mm2 (on bag_A), flat(<0.3mm)=76%, faces||plane=59%, gap p10/50/90=0.19/0.39/0.55, normal=[-0.02 -1.    0.  ]
+   feature area 5 mm2 depth -0.5..+0.6 mm (+ = toward base) inplane 8.2 x 3.5 mm at (-6,-9)
+
+bag_A <-> box1 : contact 80 mm2 (on bag_A), flat(<0.3mm)=88%, faces||plane=69%, gap p10/50/90=0.11/0.40/0.55, normal=[-0.01 -1.    0.02]
+
+bag_A <-> box2 : contact 8 mm2 (on bag_A), flat(<0.3mm)=100%, faces||plane=100%, gap p10/50/90=0.17/0.42/0.59, normal=[ 0.02  0.98 -0.18]
+
+bag_A <-> box4 : contact 12 mm2 (on bag_A), flat(<0.3mm)=92%, faces||plane=73%, gap p10/50/90=0.08/0.28/0.54, normal=[-1.   -0.   -0.06]
+
+bag_B <-> base : contact 6170 mm2 (on bag_B), flat(<0.3mm)=91%, faces||plane=92%, gap p10/50/90=0.16/0.26/0.44, normal=[ 0. -1.  0.]
+   feature area 475 mm2 depth -9.4..-0.5 mm (+ = toward base) inplane 15.1 x 11.4 mm at (-0,-2)
+
+bag_B <-> leftArm : contact 75 mm2 (on bag_B), flat(<0.3mm)=65%, faces||plane=60%, gap p10/50/90=0.15/0.40/0.57, normal=[ 0.11  0.99 -0.05]
+   feature area 4 mm2 depth -0.7..-0.5 mm (+ = toward leftArm) inplane 2.7 x 4.2 mm at (1,0)
+
+bag_B <-> legs : contact 368 mm2 (on bag_B), flat(<0.3mm)=24%, faces||plane=67%, gap p10/50/90=0.14/0.27/0.49, normal=[ 0.    0.98 -0.18]
+   feature area 125 mm2 depth -0.9..+3.9 mm (+ = toward legs) inplane 20.1 x 7.7 mm at (-4,-4)
+   feature area 60 mm2 depth +0.5..+2.3 mm (+ = toward legs) inplane 13.1 x 8.9 mm at (14,5)
+   feature area 18 mm2 depth -0.7..-0.5 mm (+ = toward legs) inplane 4.3 x 5.5 mm at (-10,7)
+   feature area 11 mm2 depth +0.5..+1.0 mm (+ = toward legs) inplane 2.5 x 6.3 mm at (-15,8)
+
+bag_B <-> rightArm : contact 72 mm2 (on bag_B), flat(<0.3mm)=66%, faces||plane=56%, gap p10/50/90=0.19/0.49/0.58, normal=[-0.13  0.99  0.1 ]
+   feature area 5 mm2 depth +0.5..+1.3 mm (+ = toward rightArm) inplane 4.8 x 3.0 mm at (7,-2)
+   feature area 4 mm2 depth -0.9..+0.8 mm (+ = toward rightArm) inplane 2.3 x 1.9 mm at (-0,-5)
+   feature area 3 mm2 depth -0.7..-0.5 mm (+ = toward rightArm) inplane 2.8 x 0.8 mm at (3,5)
+
+bag_B <-> rightBoot : contact 391 mm2 (on bag_B), flat(<0.3mm)=6%, faces||plane=2%, gap p10/50/90=0.12/0.26/0.51, normal=[-0.99 -0.05  0.11]
+   feature area 352 mm2 depth -4.0..+5.8 mm (+ = toward rightBoot) inplane 42.0 x 11.4 mm at (-2,-1)
+
+bag_B <-> skirt : contact 297 mm2 (on bag_B), flat(<0.3mm)=18%, faces||plane=36%, gap p10/50/90=0.26/0.43/0.57, normal=[ 0.02  0.99 -0.11]
+   feature area 61 mm2 depth -1.7..+2.1 mm (+ = toward skirt) inplane 7.3 x 18.1 mm at (-15,-7)
+   feature area 52 mm2 depth -1.4..+2.1 mm (+ = toward skirt) inplane 12.1 x 15.9 mm at (25,-4)
+   feature area 26 mm2 depth +0.5..+3.1 mm (+ = toward skirt) inplane 5.2 x 13.0 mm at (11,12)
+   feature area 24 mm2 depth -0.9..-0.5 mm (+ = toward skirt) inplane 7.6 x 6.2 mm at (-7,1)
+   feature area 23 mm2 depth +0.5..+2.2 mm (+ = toward skirt) inplane 8.3 x 9.5 mm at (-6,10)
+   feature area 16 mm2 depth +0.6..+2.7 mm (+ = toward skirt) inplane 4.0 x 4.1 mm at (2,-30)
+
+bag_B <-> staff_B : contact 163 mm2 (on bag_B), flat(<0.3mm)=42%, faces||plane=37%, gap p10/50/90=0.12/0.25/0.53, normal=[0.84 0.21 0.5 ]
+   feature area 73 mm2 depth -2.9..+1.4 mm (+ = toward staff_B) inplane 30.1 x 5.4 mm at (-1,1)
+   feature area 5 mm2 depth -1.7..-1.0 mm (+ = toward staff_B) inplane 1.6 x 2.9 mm at (-20,-0)
+
+box1 <-> box3 : contact 51 mm2 (on box1), flat(<0.3mm)=100%, faces||plane=93%, gap p10/50/90=0.17/0.30/0.47, normal=[-0.3   0.95 -0.04]
+
+box1 <-> box4 : contact 37 mm2 (on box1), flat(<0.3mm)=97%, faces||plane=87%, gap p10/50/90=0.04/0.11/0.46, normal=[-0.26  0.97 -0.03]
+
+box1 <-> box5 : contact 100 mm2 (on box1), flat(<0.3mm)=92%, faces||plane=88%, gap p10/50/90=0.14/0.29/0.47, normal=[-0.29  0.96 -0.05]
+   feature area 7 mm2 depth +0.5..+1.3 mm (+ = toward box5) inplane 2.1 x 3.2 mm at (-5,0)
+
+box2 <-> box4 : contact 15 mm2 (on box2), flat(<0.3mm)=98%, faces||plane=63%, gap p10/50/90=0.09/0.20/0.50, normal=[ 0.3  -0.94  0.14]
+
+cap <-> face1 : contact 136 mm2 (on cap), flat(<0.3mm)=41%, faces||plane=33%, gap p10/50/90=0.06/0.13/0.26, normal=[-0.59  0.73  0.34]
+   feature area 66 mm2 depth -1.6..+2.8 mm (+ = toward face1) inplane 14.7 x 7.2 mm at (0,-1)
+
+cap <-> leftArm : contact 102 mm2 (on cap), flat(<0.3mm)=24%, faces||plane=1%, gap p10/50/90=0.07/0.33/0.55, normal=[ 0.89  0.35 -0.28]
+   feature area 52 mm2 depth -3.2..+2.1 mm (+ = toward leftArm) inplane 14.2 x 9.2 mm at (4,0)
+   feature area 6 mm2 depth +0.5..+1.2 mm (+ = toward leftArm) inplane 4.6 x 1.6 mm at (1,5)
+   feature area 3 mm2 depth -1.3..-0.5 mm (+ = toward leftArm) inplane 1.8 x 1.3 mm at (-9,0)
+
+cap <-> leftHair : contact 10 mm2 (on cap), flat(<0.3mm)=100%, faces||plane=95%, gap p10/50/90=0.32/0.44/0.56, normal=[0.34 0.52 0.78]
+
+cap <-> ribbon : contact 37 mm2 (on cap), flat(<0.3mm)=66%, faces||plane=21%, gap p10/50/90=0.04/0.14/0.50, normal=[-0.02  0.53  0.84]
+   feature area 8 mm2 depth -2.0..+0.6 mm (+ = toward ribbon) inplane 3.4 x 3.0 mm at (-0,0)
+
+cap <-> rightArm : contact 95 mm2 (on cap), flat(<0.3mm)=22%, faces||plane=3%, gap p10/50/90=0.08/0.35/0.56, normal=[-0.93  0.37 -0.07]
+   feature area 58 mm2 depth -2.9..+2.0 mm (+ = toward rightArm) inplane 14.3 x 8.7 mm at (1,0)
+   feature area 2 mm2 depth -1.8..-0.6 mm (+ = toward rightArm) inplane 0.9 x 0.7 mm at (-10,4)
+
+cap <-> rightHair : contact 33 mm2 (on cap), flat(<0.3mm)=33%, faces||plane=0%, gap p10/50/90=0.19/0.37/0.56, normal=[0.27 0.51 0.82]
+   feature area 14 mm2 depth -1.9..+1.8 mm (+ = toward rightHair) inplane 5.1 x 3.7 mm at (6,-1)
+
+cap <-> torso : contact 487 mm2 (on cap), flat(<0.3mm)=68%, faces||plane=67%, gap p10/50/90=0.05/0.15/0.44, normal=[ 0.   -1.   -0.01]
+   feature area 56 mm2 depth -3.0..-0.5 mm (+ = toward torso) inplane 5.1 x 4.8 mm at (-0,-1)
+   feature area 41 mm2 depth +0.5..+5.4 mm (+ = toward torso) inplane 12.6 x 6.5 mm at (-5,-9)
+   feature area 18 mm2 depth +0.5..+3.3 mm (+ = toward torso) inplane 6.5 x 5.1 mm at (6,-9)
+   feature area 14 mm2 depth +0.5..+3.1 mm (+ = toward torso) inplane 6.3 x 2.7 mm at (-8,7)
+   feature area 8 mm2 depth +0.5..+2.2 mm (+ = toward torso) inplane 5.0 x 4.4 mm at (9,6)
+   feature area 6 mm2 depth +0.5..+2.8 mm (+ = toward torso) inplane 2.4 x 0.8 mm at (2,8)
+
+face1 <-> frontHair : contact 427 mm2 (on face1), flat(<0.3mm)=9%, faces||plane=9%, gap p10/50/90=0.11/0.15/0.34, normal=[-0.73  0.05  0.68]
+   feature area 366 mm2 depth -4.5..+5.1 mm (+ = toward frontHair) inplane 23.0 x 17.1 mm at (-0,0)
+
+face1 <-> rightHair : contact 5 mm2 (on face1), flat(<0.3mm)=99%, faces||plane=33%, gap p10/50/90=0.18/0.33/0.55, normal=[-0.58 -0.57 -0.59]
+
+frontHair <-> hat : contact 77 mm2 (on frontHair), flat(<0.3mm)=28%, faces||plane=0%, gap p10/50/90=0.07/0.25/0.51, normal=[-0.02  0.96 -0.29]
+   feature area 39 mm2 depth -1.4..+1.5 mm (+ = toward hat) inplane 17.4 x 8.9 mm at (1,0)
+
+hat <-> leftHair : contact 21 mm2 (on hat), flat(<0.3mm)=34%, faces||plane=14%, gap p10/50/90=0.10/0.28/0.54, normal=[ 0.5  -0.76  0.42]
+   feature area 9 mm2 depth -1.3..+1.3 mm (+ = toward leftHair) inplane 3.4 x 5.4 mm at (-1,0)
+   feature area 1 mm2 depth -0.9..-0.5 mm (+ = toward leftHair) inplane 0.3 x 1.6 mm at (2,1)
+
+hat <-> rightHair : contact 22 mm2 (on hat), flat(<0.3mm)=46%, faces||plane=16%, gap p10/50/90=0.11/0.31/0.54, normal=[-0.01 -0.99 -0.11]
+   feature area 7 mm2 depth -1.1..+1.0 mm (+ = toward rightHair) inplane 5.7 x 4.1 mm at (-1,-1)
+
+leftArm <-> skirt : contact 6 mm2 (on leftArm), flat(<0.3mm)=98%, faces||plane=75%, gap p10/50/90=0.36/0.48/0.58, normal=[-0.78 -0.28  0.56]
+
+leftArm <-> torso : contact 104 mm2 (on leftArm), flat(<0.3mm)=47%, faces||plane=46%, gap p10/50/90=0.06/0.13/0.36, normal=[-1.   -0.08  0.02]
+   feature area 41 mm2 depth -2.4..+1.9 mm (+ = toward torso) inplane 9.4 x 8.2 mm at (-3,0)
+
+leftBoot <-> legs : contact 136 mm2 (on leftBoot), flat(<0.3mm)=14%, faces||plane=1%, gap p10/50/90=0.13/0.28/0.50, normal=[-0.28  0.96  0.07]
+   feature area 98 mm2 depth -3.4..+3.9 mm (+ = toward legs) inplane 10.4 x 9.5 mm at (-2,-0)
+   feature area 7 mm2 depth +0.5..+4.0 mm (+ = toward legs) inplane 3.4 x 2.1 mm at (4,-4)
+
+legs <-> rightBoot : contact 115 mm2 (on legs), flat(<0.3mm)=13%, faces||plane=2%, gap p10/50/90=0.08/0.23/0.51, normal=[-0.75  0.46  0.47]
+   feature area 78 mm2 depth -2.9..+4.0 mm (+ = toward rightBoot) inplane 6.9 x 7.4 mm at (1,-0)
+   feature area 10 mm2 depth -1.5..+2.7 mm (+ = toward rightBoot) inplane 2.6 x 7.6 mm at (-6,-1)
+   feature area 4 mm2 depth +2.6..+5.1 mm (+ = toward rightBoot) inplane 1.9 x 2.1 mm at (-2,-5)
+
+legs <-> skirt : contact 1177 mm2 (on legs), flat(<0.3mm)=8%, faces||plane=36%, gap p10/50/90=0.14/0.33/0.53, normal=[ 0.13  0.97 -0.22]
+   feature area 774 mm2 depth -9.9..+5.3 mm (+ = toward skirt) inplane 28.6 x 35.2 mm at (-6,3)
+   feature area 181 mm2 depth -11.3..+4.3 mm (+ = toward skirt) inplane 12.5 x 40.1 mm at (10,-8)
+   feature area 47 mm2 depth +0.5..+4.2 mm (+ = toward skirt) inplane 6.9 x 14.8 mm at (-3,-21)
+   feature area 5 mm2 depth -6.0..-3.6 mm (+ = toward skirt) inplane 1.3 x 2.4 mm at (-20,-18)
+   feature area 4 mm2 depth -10.4..-8.1 mm (+ = toward skirt) inplane 0.8 x 3.2 mm at (-20,-12)
+
+rightArm <-> torso : contact 72 mm2 (on rightArm), flat(<0.3mm)=42%, faces||plane=36%, gap p10/50/90=0.07/0.14/0.40, normal=[ 0.99 -0.1  -0.06]
+   feature area 32 mm2 depth -1.5..+1.9 mm (+ = toward torso) inplane 7.3 x 6.5 mm at (-2,-0)
+
+skirt <-> torso : contact 358 mm2 (on skirt), flat(<0.3mm)=54%, faces||plane=56%, gap p10/50/90=0.05/0.13/0.27, normal=[-0.01  0.99 -0.17]
+   feature area 91 mm2 depth +0.5..+1.6 mm (+ = toward torso) inplane 19.7 x 16.5 mm at (-0,-0)
+   feature area 60 mm2 depth -3.7..-0.5 mm (+ = toward torso) inplane 4.9 x 4.0 mm at (1,-0)
+
+staff_A <-> staff_B : contact 63 mm2 (on staff_A), flat(<0.3mm)=47%, faces||plane=26%, gap p10/50/90=0.09/0.26/0.51, normal=[ 0.27 -0.96 -0.04]
+   feature area 16 mm2 depth -1.3..+0.5 mm (+ = toward staff_B) inplane 9.2 x 4.9 mm at (-0,-0)
+
+staff_A <-> staff_C : contact 41 mm2 (on staff_A), flat(<0.3mm)=35%, faces||plane=16%, gap p10/50/90=0.07/0.20/0.47, normal=[ 0.58 -0.3   0.76]
+   feature area 19 mm2 depth -1.9..+1.2 mm (+ = toward staff_C) inplane 6.2 x 4.7 mm at (-1,-0)

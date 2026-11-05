@@ -1,0 +1,78 @@
+
+backHair <-> face1 : contact 375 mm2 (on backHair), flat(<0.3mm)=5%, faces||plane=44%, gap p10/50/90=0.10/0.25/0.30, normal=[ 0.04 -0.01  1.  ]
+   feature area 314 mm2 depth -5.6..+1.8 mm (+ = toward face1) inplane 16.2 x 17.2 mm at (-0,1)
+
+backHair <-> frontHair : contact 202 mm2 (on backHair), flat(<0.3mm)=70%, faces||plane=58%, gap p10/50/90=0.04/0.10/0.41, normal=[ 0.   -0.06  1.  ]
+   feature area 30 mm2 depth -1.3..-0.5 mm (+ = toward frontHair) inplane 21.1 x 17.5 mm at (-0,-1)
+   feature area 4 mm2 depth +0.5..+0.6 mm (+ = toward frontHair) inplane 1.2 x 2.6 mm at (-6,-12)
+
+backHair <-> hat : contact 168 mm2 (on backHair), flat(<0.3mm)=14%, faces||plane=0%, gap p10/50/90=0.20/0.36/0.54, normal=[-0.13  0.96 -0.23]
+   feature area 130 mm2 depth -3.0..+3.4 mm (+ = toward hat) inplane 20.1 x 11.4 mm at (-1,1)
+   feature area 2 mm2 depth -2.9..-0.9 mm (+ = toward hat) inplane 1.1 x 0.8 mm at (-7,-12)
+
+backHair <-> rightArm : contact 23 mm2 (on backHair), flat(<0.3mm)=64%, faces||plane=24%, gap p10/50/90=0.12/0.31/0.52, normal=[-0.09  0.27  0.96]
+   feature area 4 mm2 depth -0.6..+1.1 mm (+ = toward rightArm) inplane 6.7 x 2.3 mm at (1,-1)
+
+backHair <-> torso : contact 55 mm2 (on backHair), flat(<0.3mm)=92%, faces||plane=81%, gap p10/50/90=0.11/0.26/0.52, normal=[ 0.12 -0.88  0.46]
+
+base <-> leftLeg : contact 149 mm2 (on base), flat(<0.3mm)=35%, faces||plane=60%, gap p10/50/90=0.14/0.28/0.44, normal=[-0.04  1.   -0.08]
+   feature area 72 mm2 depth -2.7..+0.8 mm (+ = toward leftLeg) inplane 8.2 x 6.0 mm at (3,-2)
+   feature area 8 mm2 depth +0.9..+1.1 mm (+ = toward leftLeg) inplane 2.6 x 3.4 mm at (11,-3)
+
+base <-> pumpkin : contact 846 mm2 (on base), flat(<0.3mm)=77%, faces||plane=88%, gap p10/50/90=0.23/0.41/0.56, normal=[0. 1. 0.]
+   feature area 189 mm2 depth -2.6..-0.5 mm (+ = toward pumpkin) inplane 14.9 x 9.8 mm at (-2,-3)
+
+face1 <-> frontHair : contact 332 mm2 (on face1), flat(<0.3mm)=12%, faces||plane=11%, gap p10/50/90=0.13/0.17/0.40, normal=[ 0.02 -0.2   0.98]
+   feature area 276 mm2 depth -4.5..+5.9 mm (+ = toward frontHair) inplane 15.9 x 13.5 mm at (-0,0)
+   feature area 0 mm2 depth +6.7..+7.4 mm (+ = toward frontHair) inplane 0.7 x 0.5 mm at (-1,7)
+
+face1 <-> torso : contact 90 mm2 (on face1), flat(<0.3mm)=30%, faces||plane=35%, gap p10/50/90=0.10/0.21/0.41, normal=[ 0.01 -0.43 -0.9 ]
+   feature area 54 mm2 depth -2.3..+1.4 mm (+ = toward torso) inplane 11.6 x 5.5 mm at (1,-0)
+
+frontHair <-> hat : contact 47 mm2 (on frontHair), flat(<0.3mm)=29%, faces||plane=0%, gap p10/50/90=0.39/0.50/0.58, normal=[-0.06  0.99 -0.14]
+   feature area 19 mm2 depth -1.7..+2.1 mm (+ = toward hat) inplane 10.4 x 12.0 mm at (-4,1)
+   feature area 5 mm2 depth -1.4..+1.4 mm (+ = toward hat) inplane 1.2 x 5.1 mm at (11,-4)
+   feature area 1 mm2 depth -1.0..+1.1 mm (+ = toward hat) inplane 1.5 x 0.9 mm at (6,3)
+
+leftArm <-> leftHand : contact 58 mm2 (on leftArm), flat(<0.3mm)=26%, faces||plane=9%, gap p10/50/90=0.03/0.08/0.52, normal=[ 0.42  0.81 -0.41]
+   feature area 33 mm2 depth -2.7..+1.5 mm (+ = toward leftHand) inplane 10.3 x 4.9 mm at (-2,0)
+
+leftArm <-> pumpkin : contact 231 mm2 (on leftArm), flat(<0.3mm)=25%, faces||plane=48%, gap p10/50/90=0.24/0.43/0.57, normal=[-0.43 -0.27  0.86]
+   feature area 73 mm2 depth -1.4..-0.5 mm (+ = toward pumpkin) inplane 15.4 x 6.9 mm at (0,-2)
+   feature area 52 mm2 depth +0.5..+3.9 mm (+ = toward pumpkin) inplane 10.2 x 8.6 mm at (10,4)
+   feature area 22 mm2 depth +0.5..+6.0 mm (+ = toward pumpkin) inplane 8.6 x 12.7 mm at (-14,-9)
+
+leftArm <-> torso : contact 70 mm2 (on leftArm), flat(<0.3mm)=20%, faces||plane=20%, gap p10/50/90=0.10/0.21/0.42, normal=[-0.55  0.82  0.17]
+   feature area 46 mm2 depth -2.4..+2.3 mm (+ = toward torso) inplane 7.3 x 6.3 mm at (0,-1)
+
+leftHand <-> pumpkin : contact 13 mm2 (on leftHand), flat(<0.3mm)=21%, faces||plane=4%, gap p10/50/90=0.24/0.43/0.57, normal=[-0.64 -0.66 -0.38]
+   feature area 4 mm2 depth -2.0..-0.8 mm (+ = toward pumpkin) inplane 2.6 x 2.2 mm at (5,-1)
+   feature area 3 mm2 depth -1.6..+1.1 mm (+ = toward pumpkin) inplane 1.2 x 5.3 mm at (-2,1)
+   feature area 1 mm2 depth +0.5..+0.9 mm (+ = toward pumpkin) inplane 0.9 x 1.0 mm at (7,-0)
+   feature area 0 mm2 depth +0.9..+1.5 mm (+ = toward pumpkin) inplane 0.7 x 0.6 mm at (6,4)
+
+leftLeg <-> waist : contact 255 mm2 (on leftLeg), flat(<0.3mm)=24%, faces||plane=42%, gap p10/50/90=0.05/0.17/0.35, normal=[-0.04  0.94  0.34]
+   feature area 154 mm2 depth -0.7..+3.0 mm (+ = toward waist) inplane 14.6 x 12.4 mm at (0,-1)
+
+pumpkin <-> rightArm : contact 161 mm2 (on pumpkin), flat(<0.3mm)=20%, faces||plane=38%, gap p10/50/90=0.14/0.36/0.56, normal=[-0.8  0.6  0.1]
+   feature area 46 mm2 depth +0.5..+1.6 mm (+ = toward rightArm) inplane 7.9 x 8.6 mm at (-1,1)
+   feature area 35 mm2 depth -2.3..-0.5 mm (+ = toward rightArm) inplane 6.7 x 11.0 mm at (-8,1)
+   feature area 24 mm2 depth -2.6..-0.5 mm (+ = toward rightArm) inplane 3.7 x 8.3 mm at (14,0)
+   feature area 5 mm2 depth +0.5..+0.9 mm (+ = toward rightArm) inplane 1.9 x 3.7 mm at (9,1)
+
+pumpkin <-> rightLeg : contact 59 mm2 (on pumpkin), flat(<0.3mm)=32%, faces||plane=0%, gap p10/50/90=0.13/0.36/0.55, normal=[-0.09  0.99  0.07]
+   feature area 31 mm2 depth -1.3..+2.6 mm (+ = toward rightLeg) inplane 12.2 x 7.5 mm at (-0,0)
+
+rightArm <-> rightHand : contact 46 mm2 (on rightArm), flat(<0.3mm)=22%, faces||plane=0%, gap p10/50/90=0.02/0.06/0.36, normal=[0.77 0.27 0.58]
+   feature area 30 mm2 depth -1.8..+2.6 mm (+ = toward rightHand) inplane 5.6 x 4.7 mm at (-0,-0)
+
+rightArm <-> torso : contact 85 mm2 (on rightArm), flat(<0.3mm)=13%, faces||plane=19%, gap p10/50/90=0.09/0.22/0.43, normal=[ 0.29  0.67 -0.68]
+   feature area 62 mm2 depth -2.7..+2.4 mm (+ = toward torso) inplane 8.3 x 6.3 mm at (0,-0)
+
+rightLeg <-> torso : contact 5 mm2 (on rightLeg), flat(<0.3mm)=100%, faces||plane=59%, gap p10/50/90=0.31/0.47/0.58, normal=[0.1  0.42 0.9 ]
+
+rightLeg <-> waist : contact 277 mm2 (on rightLeg), flat(<0.3mm)=23%, faces||plane=40%, gap p10/50/90=0.06/0.17/0.42, normal=[-0.15  0.88 -0.46]
+   feature area 178 mm2 depth -0.6..+3.5 mm (+ = toward waist) inplane 14.8 x 12.8 mm at (-0,-0)
+
+torso <-> waist : contact 614 mm2 (on torso), flat(<0.3mm)=19%, faces||plane=50%, gap p10/50/90=0.05/0.15/0.32, normal=[-0.06 -0.57 -0.82]
+   feature area 415 mm2 depth -5.3..+3.4 mm (+ = toward waist) inplane 27.8 x 23.5 mm at (-1,-2)
