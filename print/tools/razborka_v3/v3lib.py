@@ -123,7 +123,8 @@ def render(parts, views=("front", "left", "back", "right"), explode=0.0, W=420, 
     for name, m, col in parts:
         k = int(max(100000, min(2500000, m.area * 160)))
         p, fi = trimesh.sample.sample_surface(m, k)
-        S.append((p, m.face_normals[fi], np.asarray(col, float), m.centroid))
+        col = np.asarray(col, float)
+        S.append((p, m.face_normals[fi], col[fi] if col.ndim == 2 else col, m.centroid))
     allp = np.vstack([s[0] for s in S])
     C = (allp.min(0) + allp.max(0)) / 2 if center is None else np.asarray(center, float)
     C = C.copy(); zmin = allp[:, 2].min()
@@ -136,7 +137,7 @@ def render(parts, views=("front", "left", "back", "right"), explode=0.0, W=420, 
             off = (cen - C) * np.array([1, 1, 0.8]) * explode
             q = (p + off - C) @ R.T; nn = nr @ R.T
             sh = np.clip(nn @ L, 0, 1) * 0.65 + 0.35
-            Q.append(q); Cc.append(np.outer(sh, col))
+            Q.append(q); Cc.append(sh[:, None] * col if col.ndim == 2 else np.outer(sh, col))
         q = np.vstack(Q); cc = np.vstack(Cc)
         x = (q[:, 0] * sc + W / 2).astype(int); y = (W / 2 - q[:, 2] * sc).astype(int)
         ok = (x >= 0) & (x < W) & (y >= 0) & (y < W)
