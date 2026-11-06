@@ -33,8 +33,24 @@ SIDE={ # обводка вида сбоку, координаты пикселе
 def smask(poly):
     im=Image.new('L',(W,H),0); ImageDraw.Draw(im).polygon(poly,fill=1); return np.array(im,bool)
 S={k:smask(v) for k,v in SIDE.items()}
+# спина по розовой линии пользователя: задний край рубашки, пояса и шорт
+from scipy.ndimage import median_filter as _mf, gaussian_filter1d as _g1
+M=np.load('mag_orig.npy'); mx,my=M[:,0],M[:,1].astype(int)
+rows=np.arange(my.min(),my.max()+1)
+back=np.array([mx[my==r].min() if (my==r).any() else np.nan for r in rows])
+ok=~np.isnan(back); back=np.interp(rows,rows[ok],back[ok]); back=_g1(_mf(back,15,mode='nearest'),3,mode='nearest')
+Btop,Bbot=rows.min(),rows.max()
+print('back line rows',Btop,Bbot)
+for k in ('shirt','belt','shorts'):
+    m=S[k]
+    for r in range(H):
+        cols=np.nonzero(m[r])[0]
+        if not len(cols): continue
+        if r>Bbot: m[r]=False; continue           # шорты кончаются по розовой линии
+        if r<Btop: continue
+        m[r]=False; m[r,int(round(back[r-Btop])):cols.max()+1]=True
 S['undershirt']=S['shirt']
-DS=2; X0,X1=60,614; Y0,Y1=630,950; Z0,Z1=40,1000
+DS=1; X0,X1=60,614; Y0,Y1=630,950; Z0,Z1=40,1000
 xs=np.arange(X0,X1,DS); ys=np.arange(Y0,Y1,DS); zs=np.arange(Z0,Z1,DS)
 lab=np.zeros((len(xs),len(ys),len(zs)),np.int16)
 XX,YY=np.meshgrid(xs,ys,indexing='ij'); NEXP=2.4
@@ -53,7 +69,7 @@ def fill(name,fm,sm,li):
         ks.append(k); P.append((row.min()-0.5,row.max()+0.5,col.min()-0.5,col.max()+0.5))
     P=np.array(P,float)
     if len(P)>7:   # убрать дрожание руки рисунка (~0,2 мм), форма контура остаётся
-        P=median_filter(P,size=(5,1),mode='nearest'); P=gaussian_filter1d(P,1.6,axis=0,mode='nearest')
+        P=median_filter(P,size=(9,1),mode='nearest'); P=gaussian_filter1d(P,3.2,axis=0,mode='nearest')
     for k,(a,b,c,d) in zip(ks,P):
         e=(np.abs(XX-(a+b)/2)/((b-a)/2))**NEXP+(np.abs(YY-(c+d)/2)/((d-c)/2))**NEXP<=1
         lab[:,:,k][e]=li
@@ -78,7 +94,7 @@ def mesh(m):
     idx=np.argwhere(m); lo=np.maximum(idx.min(0)-4,0); hi=idx.max(0)+5
     sub=np.pad(m[lo[0]:hi[0],lo[1]:hi[1],lo[2]:hi[2]],3)
     d=nd.distance_transform_edt(~sub)-nd.distance_transform_edt(sub)
-    d=nd.gaussian_filter(d.astype(np.float32),1.3)
+    d=nd.gaussian_filter(d.astype(np.float32),2.4)
     v,f,_,_=marching_cubes(d,0.0); v=v+lo-3
     t=trimesh.Trimesh(to_mm(v),f[:,::-1],process=True); trimesh.smoothing.filter_taubin(t,iterations=12)
     p=t.split(only_watertight=False); t=max(p,key=lambda q:len(q.faces))
@@ -89,4 +105,10 @@ for i,n in enumerate(order,1):
     c,k=nd.label(m)
     if k>1: m=c==(np.argmax(np.bincount(c.ravel())[1:])+1)
     t=mesh(m); t.export(os.path.join(OUT,n+'.stl')); print(n,len(t.faces),t.is_watertight)
-w=mesh(lab>0); w.export(os.path.join(OUT,'whole.stl')); print('whole',w.bounds.round(1).tolist(),w.is_watertight)
+w=mesh(lab>0)
+try:
+    import fast_simplification as fs
+    if len(w.faces)>1500000:
+        v,f=fs.simplify(w.vertices,w.faces,target_reduction=1-1500000/len(w.faces)); w=trimesh.Trimesh(v,f)
+except ImportError: print('no decimation')
+w.export(os.path.join(OUT,'whole.stl')); print('whole',w.bounds.round(1).tolist(),w.is_watertight)
