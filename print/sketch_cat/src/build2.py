@@ -17,6 +17,8 @@ def grow(m,dy):
     return out
 F['neck']=F['neck']|(grow(F['neck'],-30)&F['head'])
 for e in ('ear_L','ear_R'): F[e]=F[e]|(grow(F[e],35)&F['head'])
+F['neck']=F['neck']|(grow(F['neck'],25)&F['shirt'])
+for l,b in (('leg_L','boot_L'),('leg_R','boot_R')): F[l]=F[l]|(grow(F[l],45)&F[b])|(grow(F[l],-15)&F['shorts'])
 H,W=1044,971
 SIDE={ # обводка вида сбоку, координаты пикселей скетча (x вправо = вперёд)
  'head':[(727,135),(750,127),(870,124),(885,135),(890,170),(885,210),(870,240),(845,262),(835,285),(820,298),(760,308),(700,318),(688,305),(686,270),(700,225),(715,180)],
@@ -33,23 +35,14 @@ SIDE={ # обводка вида сбоку, координаты пикселе
 def smask(poly):
     im=Image.new('L',(W,H),0); ImageDraw.Draw(im).polygon(poly,fill=1); return np.array(im,bool)
 S={k:smask(v) for k,v in SIDE.items()}
-# спина по розовой линии пользователя: задний край рубашки, пояса и шорт
-from scipy.ndimage import median_filter as _mf, gaussian_filter1d as _g1
-M=np.load('mag_orig.npy'); mx,my=M[:,0],M[:,1].astype(int)
-rows=np.arange(my.min(),my.max()+1)
-back=np.array([mx[my==r].min() if (my==r).any() else np.nan for r in rows])
-ok=~np.isnan(back); back=np.interp(rows,rows[ok],back[ok]); back=_g1(_mf(back,15,mode='nearest'),3,mode='nearest')
-Btop,Bbot=rows.min(),rows.max()
-print('back line rows',Btop,Bbot)
-for k in ('shirt','belt','shorts'):
-    m=S[k]
-    for r in range(H):
-        cols=np.nonzero(m[r])[0]
-        if not len(cols): continue
-        if r>Bbot: m[r]=False; continue           # шорты кончаются по розовой линии
-        if r<Btop: continue
-        m[r]=False; m[r,int(round(back[r-Btop])):cols.max()+1]=True
+# тело сбоку = розовый контур пользователя (узкое, наклонено вперёд);
+# между розовой диагональю и передней чёрной линией — рука
+BODY=[(750,322),(800,312),(885,308),(872,340),(850,395),(825,450),(805,500),(830,545),(860,600),(890,660),(880,668),
+      (840,668),(760,670),(730,660),(705,635),(680,580),(660,525),(655,500),(675,480),(705,465),(725,430),(740,380),(745,340)]
+body=smask(BODY); rr=np.arange(H)[:,None]
+S['shirt']=body&(rr<=500); S['belt']=body&(rr>=470)&(rr<=515); S['shorts']=body&(rr>=500)
 S['undershirt']=S['shirt']
+S['arm']=smask([(835,335),(885,330),(900,400),(912,480),(905,510),(880,520),(840,512),(780,505),(800,450),(820,395)])
 DS=1; X0,X1=60,614; Y0,Y1=630,950; Z0,Z1=40,1000
 xs=np.arange(X0,X1,DS); ys=np.arange(Y0,Y1,DS); zs=np.arange(Z0,Z1,DS)
 lab=np.zeros((len(xs),len(ys),len(zs)),np.int16)
@@ -84,6 +77,18 @@ sh=lab==order.index('shirt')+1
 for xi,zi in zip(*np.nonzero(vee)):
     col=np.nonzero(sh[xi,:,zi])[0]
     if len(col): lab[xi,col[col>=(col.min()+col.max())/2],zi]=UI
+# перемычки в стыках, где детали только касаются (подмышка, под головой)
+def bridge(a,b,r):
+    A=lab==order.index(a)+1; B=lab==order.index(b)+1
+    if not A.any() or not B.any(): return
+    idx=np.argwhere(A|B); lo=np.maximum(idx.min(0)-r,0); hi=idx.max(0)+r+1
+    sl=tuple(slice(l,h) for l,h in zip(lo,hi))
+    da=nd.distance_transform_edt(~A[sl]); db=nd.distance_transform_edt(~B[sl])
+    add=(da<=r)&(db<=r)&(lab[sl]==0)
+    cc,_=nd.label(add|A[sl]); keep=np.unique(cc[A[sl]]); add&=np.isin(cc,keep[keep>0])
+    sub=lab[sl]; sub[add]=order.index(a)+1; print('bridge',a,b,int(add.sum()))
+for a,b in (('arm_L','shirt'),('arm_R','shirt'),('neck','shirt'),('neck','head'),('leg_L','boot_L'),('leg_R','boot_R'),('leg_L','shorts'),('leg_R','shorts')):
+    bridge(a,b,14 if a.startswith('arm') else 8)
 np.savez_compressed(os.path.join(OUT,'labels.npz'),lab=lab,order=np.array(order))
 # --- меши (мм): высота 100 мм = 901 px скетча
 MM=100/901; V=DS*MM
