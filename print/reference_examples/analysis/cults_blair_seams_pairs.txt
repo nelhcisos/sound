@@ -1,0 +1,11 @@
+leftLeg|waist|нога→таз L
+rightLeg|waist|нога→таз R
+waist|torso|таз→торс
+leftArm|torso|рукав→торс L
+rightArm|torso|рукав→торс R
+leftHand|leftArm|кисть→рукав L
+rightHand|rightArm|кисть→рукав R
+face1|backHair|лицо→волосы
+frontHair|backHair|чёлка→волосы
+face1|torso|лицо→шея
+hat|backHair|шляпа→волосы

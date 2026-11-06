@@ -1,0 +1,11 @@
+Left_Leg|ClothBody_Down|нога→юбка L
+Right_Leg|ClothBody_Down|нога→юбка R
+ClothBody_Up|ClothBody_Down|кофта→юбка
+Face|ClothBody_Up|шея→воротник
+Left_Hand|ClothBody_Up|рука→рукав L
+Right_Hand|ClothBody_Up|рука→рукав R
+Face|Hair|лицо→волосы
+Hair_Bang|Hair|чёлка→волосы
+Hair_Pin|Hair|заколка→волосы
+Hair_Tail|Hair_Pin|хвост→заколка
+Right_Leg|Stand|подошва→подставка

@@ -1,0 +1,13 @@
+Leg_L|Skirt|нога→юбка L
+Leg_R|Skirt|нога→юбка R
+Skirt|Bust|юбка→бюст
+Head|Bust|голова→бюст
+Arm_L|Cape|рукав→накидка L
+Arm_R|Cape|рукав→накидка R
+Bust|Cape|бюст→накидка
+Katana_w_Hand|Arm_R|кисть+меч→рукав
+Saya_w_Hand|Arm_L|кисть+ножны→рукав
+Braid_L|Head|коса L
+Braid_R|Head|коса R
+Braid_Back|Head|коса сзади
+Hair_FrontBang|Head|чёлка

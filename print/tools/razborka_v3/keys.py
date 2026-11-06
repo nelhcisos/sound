@@ -98,15 +98,10 @@ for j in reversed(J["joints"]):
         rec = {"part": part, "neighbor": nb, "area_mm2": round(g.area, 1)}
         if j["key"] == "none":
             rec["key"] = "клей"; report.append(rec); print("%-12s -> %-12s клей (по плану)" % (part, nb)); continue
-        own, rcv = (part, nb) if j["key"] == "part" else (nb, part)
-        d = -n if own == part else n                     # направление шипа: в получателя
         # ориентация — по главным осям среза
         mrr = g.minimum_rotated_rectangle; xy = np.array(mrr.exterior.coords)[:4]
         e1 = xy[1] - xy[0]; e2 = xy[2] - xy[1]
         minor = min(np.linalg.norm(e1), np.linalg.norm(e2)); ang = np.arctan2(e1[1], e1[0])
-        ku = np.cos(ang) * u + np.sin(ang) * v; kv = np.cross(d, ku)
-        tr = to_tm(M[rcv])  # получатель с уже вырезанными гнёздами
-        # кандидаты в центр: самая глубокая точка среза + сетка точек внутри; крупный шип — первым
         from shapely.geometry import Point
         c0 = polylabel(g, 0.01); cands = [(c0.x, c0.y)]
         bx = np.array(g.bounds); st = max(0.3, minor / 12)
@@ -118,23 +113,41 @@ for j in reversed(J["joints"]):
             rin = g.boundary.distance(Point(cx, cy))
             cw.append((min(KW * minor, np.sqrt(2) * rin - 2 * (WALL + CS), WMAX), cx, cy))
         cw.sort(key=lambda t: -t[0]); cw = [cw[0]] + [c for c in cw[1:] if c[0] >= WMIN][::max(1, len(cw) // 14)][:14]
-        ok = False; depth = 0.0
-        for w0, cx, cy in cw:
-            ctr = p + cx * u + cy * v
-            hit, _, _ = tr.ray.intersects_location([ctr + d * 0.01], [d])
-            depth = float(np.min(np.linalg.norm(hit - ctr, axis=1))) if len(hit) else 0.0
-            wk = w0
-            for _ in range(2):
-                if wk < WMIN: break
-                hk = min(KHj * wk, depth - CT - FLOOR, 0.5 * depth)  # гнездо не глубже половины детали
-                if hk < 0.8: break
-                wt = wk - 2 * hk * tan
-                Mx = mat34(ctr, ku, kv, d)
-                shell = prism(wk + 2 * (CS + WALL), hk + CT + FLOOR, wt + 2 * (CS + WALL), 0.05).transform(Mx)
-                if (shell - M[rcv]).volume() < 0.002 * shell.volume():
-                    ok = True; break
-                wk *= 0.85
-            if ok: break
+
+        def place(own, rcv):
+            """лучший шип из own в rcv: (ok, wk, hk, wt, Mx, ctr, depth)"""
+            d = -n if own == part else n                 # направление шипа: в получателя
+            ku = np.cos(ang) * u + np.sin(ang) * v; kv = np.cross(d, ku)
+            tr = to_tm(M[rcv])                           # получатель с уже вырезанными гнёздами
+            depth = 0.0
+            for w0, cx, cy in cw:
+                ctr = p + cx * u + cy * v
+                hit, _, _ = tr.ray.intersects_location([ctr + d * 0.01], [d])
+                depth = float(np.min(np.linalg.norm(hit - ctr, axis=1))) if len(hit) else 0.0
+                wk = w0
+                for _ in range(2):
+                    if wk < WMIN: break
+                    hk = min(KHj * wk, depth - CT - FLOOR, 0.5 * depth)  # гнездо не глубже половины детали
+                    if hk < 0.8: break
+                    wt = wk - 2 * hk * tan
+                    Mx = mat34(ctr, ku, kv, d)
+                    shell = prism(wk + 2 * (CS + WALL), hk + CT + FLOOR, wt + 2 * (CS + WALL), 0.05).transform(Mx)
+                    if (shell - M[rcv]).volume() < 0.002 * shell.volume():
+                        return True, wk, hk, wt, Mx, ctr, depth, d, ku
+                    wk *= 0.85
+            return False, 0, 0, 0, None, None, depth, d, ku
+
+        # "auto": гнездо — в деталь, где вокруг стыка больше материала (у профи бывает в обе стороны)
+        opts = [(part, nb), (nb, part)] if j["key"] == "auto" else [(part, nb) if j["key"] == "part" else (nb, part)]
+        best = None
+        for own_, rcv_ in opts:
+            r_ = place(own_, rcv_)
+            if r_[0] and (best is None or r_[1] * r_[2] > best[1][1] * best[1][2] * 1.15):
+                best = ((own_, rcv_), r_)
+            if best is None and not r_[0]: depth = r_[6]
+        ok = best is not None
+        if ok:
+            (own, rcv), (_, wk, hk, wt, Mx, ctr, depth, d, ku) = best
         if not ok:
             rec["key"] = "клей (мало места)"; report.append(rec)
             print("%-12s -> %-12s клей: места под шип нет (срез %.1f мм², глубина %.1f)" % (part, nb, g.area, depth)); continue

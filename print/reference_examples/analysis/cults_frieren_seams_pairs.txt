@@ -1,0 +1,13 @@
+legs|skirt|ноги→юбка
+skirt|torso|юбка→торс
+torso|cap|торс→накидка
+leftArm|torso|рука→торс L
+rightArm|torso|рука→торс R
+legs|leftBoot|нога→сапог L
+legs|rightBoot|нога→сапог R
+face1|backHair|лицо→волосы
+frontHair|backHair|чёлка→волосы
+leftHair|backHair|прядь L
+rightHair|backHair|прядь R
+face1|cap|лицо→накидка
+hat|backHair|шапка→волосы

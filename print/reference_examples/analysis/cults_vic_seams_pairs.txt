@@ -1,0 +1,8 @@
+PiernaIZQ|Falda|нога→шорты L
+PiernaDRCH|Falda|нога→шорты R
+Falda|Cuerpo|шорты→куртка
+Rostro|Cuerpo|шея→куртка
+brazo|Cuerpo|рука→рукав
+Rostro|cabello1|голова→волосы1
+Rostro|cabello2|голова→волосы2
+cabello1|cabello2|половины волос

@@ -15,8 +15,8 @@ plan.json:
      "prism": {"at": [x,y,z], "axis": "z", "margin": 0.4, "pick": [x,y,z]},  # сечение тела +margin, вытянутое по оси
      # вместо planes/...: "any": [{область}, {область}] — объединение областей (плоскость стыка = 1-я плоскость 1-й области)
      "seed": [0, 0, 3],                           # точка внутри детали: берётся только её кусок
-     "key": "part"}                               # чей шип: "part" — из этой детали в соседа,
-  ]                                               # "body" — из соседа в эту деталь, "none" — на клей
+     "key": "auto"}                               # чей шип: "auto" (по умолчанию) — гнездо туда, где толще;
+  ]                                               # "part" — из этой детали в соседа, "body" — из соседа в неё, "none" — клей
 }
 Результат: outdir/master_100mm/*.stl, outdir/joints.json, outdir/scheme.png (в сборе / в разборе).
 """
@@ -61,7 +61,7 @@ for spec in plan["parts"]:
     parts.append((name, part))
     pl = joint_plane(spec)
     joints.append({"part": name, "p": list(map(float, pl["p"])), "n": list(map(float, vec(pl["n"]))),
-                   "key": spec.get("key", "part"), **({"kh": spec["kh"]} if "kh" in spec else {})})
+                   "key": spec.get("key", "auto"), **({"kh": spec["kh"]} if "kh" in spec else {})})
 
 rest = plan.get("rest", "body")
 bc = sorted(body.decompose(), key=lambda c: -c.volume())
