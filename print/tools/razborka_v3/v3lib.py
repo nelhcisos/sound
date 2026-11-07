@@ -59,6 +59,13 @@ def _region(spec, lo, hi, body_tm=None):
         sp = spec["sphere"]; c = c ^ m3.Manifold.sphere(float(sp["r"]), 96).translate(sp["c"])
     if "prism" in spec:
         c = c ^ prism_region(spec["prism"], body_tm, lo, hi)
+    if "ellipsoid" in spec:
+        # «шлем» по форме черепа: снаружи (outside: true) или внутри эллипсоида, раздутого на offset мм
+        e = spec["ellipsoid"]; r = np.asarray(e["r"], float) + float(e.get("offset", 0.0))
+        el = m3.Manifold.sphere(1.0, 192).scale(r).translate(e["c"])
+        c = (c - el) if e.get("outside", True) else (c ^ el)
+    for sub in spec.get("minus", []):        # вычесть области (например, ногу внутри ботинка)
+        c = c - _region(sub, lo, hi, body_tm)
     return c
 
 

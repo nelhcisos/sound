@@ -2,6 +2,8 @@
 
 | Превью | Модель | STL |
 |---|---|---|
+| <img src="emm/preview.png" width="160"> | emm | [emm_40mm.stl](emm/emm_40mm.stl) |
+| <img src="emm_parts/keys_check.png" width="160"> | emm_parts | [папка, 13 частей](emm_parts/)<br>[arm_L.stl](emm_parts/arm_L.stl)<br>[arm_R.stl](emm_parts/arm_R.stl)<br>[bangs.stl](emm_parts/bangs.stl)<br>[base.stl](emm_parts/base.stl)<br>[cap.stl](emm_parts/cap.stl)<br>[croc_L.stl](emm_parts/croc_L.stl)<br>[croc_R.stl](emm_parts/croc_R.stl)<br>[face.stl](emm_parts/face.stl)<br>[glove_L.stl](emm_parts/glove_L.stl)<br>[glove_R.stl](emm_parts/glove_R.stl)<br>[mask.stl](emm_parts/mask.stl)<br>[pants.stl](emm_parts/pants.stl)<br>[top.stl](emm_parts/top.stl) |
 | <img src="my_room/preview.png" width="160"> | my_room | [my_room_1to50.stl](my_room/my_room_1to50.stl) |
 | <img src="puffer_guy/preview.png" width="160"> | puffer_guy | [puffer_guy_40mm_hollow.stl](puffer_guy/puffer_guy_40mm_hollow.stl) |
 | <img src="redhead_black_tracksuit/preview.png" width="160"> | redhead_black_tracksuit | [redhead_black_tracksuit_40mm_hollow.stl](redhead_black_tracksuit/redhead_black_tracksuit_40mm_hollow.stl) |

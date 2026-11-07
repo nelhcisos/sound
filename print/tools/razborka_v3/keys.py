@@ -163,9 +163,14 @@ for j in reversed(J["joints"]):
 for nme in T:
     man = M[nme]
     comps = sorted(man.decompose(), key=lambda c: -c.volume())
-    if len(comps) > 1 and comps[1].volume() > 0.05:
-        print("ВНИМАНИЕ %s: %d тел (%s мм³)" % (nme, len(comps), [round(c.volume(), 2) for c in comps[:4]]))
-    M[nme] = comps[0]
+    if nme in J.get("multi", []):             # деталь из нескольких кусков (пряди) — оставить все
+        keep = [c for c in comps if c.volume() > 0.01]
+        M[nme] = keep[0]
+        for c in keep[1:]: M[nme] = M[nme] + c
+    else:
+        if len(comps) > 1 and comps[1].volume() > 0.05:
+            print("ВНИМАНИЕ %s: %d тел (%s мм³) — оставлено крупнейшее" % (nme, len(comps), [round(c.volume(), 2) for c in comps[:4]]))
+        M[nme] = comps[0]
     tm = to_tm(M[nme]); tm.export("%s/%s.stl" % (a.outdir, nme))
     print("%-14s %6.0f мм³  %s мм  замкнута %s" % (nme, tm.volume, tm.extents.round(1), tm.is_watertight))
 json.dump({"H": a.H, "clear_side": CS, "clear_top": CT, "joints": report}, open(a.outdir + "/keys.json", "w"),
