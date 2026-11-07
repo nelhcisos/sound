@@ -64,6 +64,13 @@ def _region(spec, lo, hi, body_tm=None):
         e = spec["ellipsoid"]; r = np.asarray(e["r"], float) + float(e.get("offset", 0.0))
         el = m3.Manifold.sphere(1.0, 192).scale(r).translate(e["c"])
         c = (c - el) if e.get("outside", True) else (c ^ el)
+    if "mesh" in spec:
+        # внутри заданной сетки (например, старая деталь по цвету), раздутой масштабом от её центра
+        me = spec["mesh"]; t = trimesh.load(me["path"], force="mesh")
+        if "translate" in me: t.apply_translation(me["translate"])
+        k = float(me.get("scale", 1.0)); cc = t.bounding_box.centroid
+        t.apply_translation(-cc); t.apply_scale(k); t.apply_translation(cc)
+        c = c ^ to_man(t)
     for sub in spec.get("minus", []):        # вычесть области (например, ногу внутри ботинка)
         c = c - _region(sub, lo, hi, body_tm)
     return c
