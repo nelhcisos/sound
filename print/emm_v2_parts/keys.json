@@ -1,0 +1,127 @@
+{
+ "H": 40.0,
+ "clear_side": 0.1,
+ "clear_top": 0.25,
+ "joints": [
+  {
+   "part": "face",
+   "neighbor": "top",
+   "area_mm2": 9.4,
+   "key": "шип",
+   "owner": "face",
+   "receiver": "top",
+   "w": 1.05,
+   "h": 0.84,
+   "top": 0.93,
+   "center": [
+    -0.0,
+    0.24,
+    21.85
+   ],
+   "dir": [
+    -0.0,
+    -0.0,
+    -1.0
+   ]
+  },
+  {
+   "part": "cap",
+   "neighbor": "hair",
+   "area_mm2": 5.0,
+   "key": "клей"
+  },
+  {
+   "part": "pants",
+   "neighbor": "top",
+   "area_mm2": 45.0,
+   "key": "шип",
+   "owner": "pants",
+   "receiver": "top",
+   "w": 2.4,
+   "h": 1.92,
+   "top": 2.13,
+   "center": [
+    -1.72,
+    0.09,
+    12.26
+   ],
+   "dir": [
+    0.0,
+    0.0,
+    1.0
+   ]
+  },
+  {
+   "part": "arm_L",
+   "neighbor": "top",
+   "area_mm2": 4.0,
+   "key": "клей (мало места)"
+  },
+  {
+   "part": "arm_R",
+   "neighbor": "top",
+   "area_mm2": 4.0,
+   "key": "клей (мало места)"
+  },
+  {
+   "part": "glove_L",
+   "neighbor": "arm_L",
+   "area_mm2": 3.8,
+   "key": "клей (мало места)"
+  },
+  {
+   "part": "glove_R",
+   "neighbor": "arm_R",
+   "area_mm2": 3.8,
+   "key": "клей (мало места)"
+  },
+  {
+   "part": "croc_L",
+   "neighbor": "pants",
+   "area_mm2": 12.0,
+   "key": "шип",
+   "owner": "croc_L",
+   "receiver": "pants",
+   "w": 1.32,
+   "h": 1.05,
+   "top": 1.17,
+   "center": [
+    2.33,
+    0.27,
+    4.33
+   ],
+   "dir": [
+    0.0,
+    0.0,
+    1.0
+   ]
+  },
+  {
+   "part": "croc_R",
+   "neighbor": "pants",
+   "area_mm2": 12.0,
+   "key": "шип",
+   "owner": "croc_R",
+   "receiver": "pants",
+   "w": 1.32,
+   "h": 1.05,
+   "top": 1.17,
+   "center": [
+    -2.33,
+    0.27,
+    4.33
+   ],
+   "dir": [
+    0.0,
+    0.0,
+    1.0
+   ]
+  },
+  {
+   "part": "base",
+   "neighbor": "croc_R",
+   "area_mm2": 11.0,
+   "key": "клей (мало места)"
+  }
+ ]
+}
