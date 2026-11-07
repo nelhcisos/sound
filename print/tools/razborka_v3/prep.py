@@ -6,6 +6,7 @@ usage: python3 prep.py in.(glb|stl|obj) master.stl [опции]
   --hollow        вход — наша полая STL со сливом (hollow.py): заткнуть слив и выбросить полость
   --voxel PITCH   принудительно пересобрать через воксели (мм на мастере, напр. 0.12) — для «грязных» сеток
   --height H      высота мастера (по умолчанию 100)
+  --smooth N      гладкая плотная сетка: подразбиение Лупа x1 + сглаживание Таубина N итераций (для низкополигональных генераций)
 """
 import sys, os, argparse
 import numpy as np, trimesh
@@ -18,6 +19,9 @@ ap.add_argument("src"); ap.add_argument("dst")
 ap.add_argument("--up", default=None); ap.add_argument("--rotz", type=float, default=0)
 ap.add_argument("--hollow", action="store_true"); ap.add_argument("--voxel", type=float, default=0)
 ap.add_argument("--height", type=float, default=100.0)
+ap.add_argument("--fill-cavity", type=float, default=0, help="залить внутренние полости с дренажами любой формы; R мм (> радиуса слива) на мастере")
+ap.add_argument("--fill-pitch", type=float, default=0.2)
+ap.add_argument("--smooth", type=int, default=0, help="гладкость: подразбиение Лупа x1 + Таубин N итераций (низкополигональные генерации)")
 a = ap.parse_args()
 
 s = trimesh.load(a.src, force="scene")
@@ -96,6 +100,62 @@ sc = a.height / m.extents[2]
 m.apply_scale(sc)
 m.apply_translation([-(m.bounds[0][0] + m.bounds[1][0]) / 2, -(m.bounds[0][1] + m.bounds[1][1]) / 2, -m.bounds[0][2]])
 
+def fill_cavities(m, R, pitch):
+    """Полая модель с дренажами (где угодно) -> сплошная. Ядра пустоты дальше R от стенок, не связанные с краем сетки, —
+    полости; заливка растёт от них только по пустоте (геодезически) на R + стенка, потом всё замкнутое внутри — сплошное.
+    Узкие щели снаружи (между ног, под очками) не трогаются: в них нет ядер."""
+    from scipy import ndimage
+    from skimage import measure
+    pad = R + 3.0; lo = m.bounds[0] - pad; hi = m.bounds[1] + pad; sh = np.ceil((hi - lo) / pitch).astype(int) + 1
+    occ = np.zeros(sh, bool)
+    k = int(m.area * 10 / (pitch * pitch))          # ~10 точек на грань вокселя — оболочка без дыр
+    for i in range(0, k, 3_000_000):
+        p_, _ = trimesh.sample.sample_surface(m, min(3_000_000, k - i))
+        q = np.floor((p_ - lo) / pitch).astype(int); occ[q[:, 0], q[:, 1], q[:, 2]] = True
+    occ = ndimage.binary_dilation(occ, iterations=1)
+    E = ~occ
+    dist = ndimage.distance_transform_edt(E) * pitch
+    core = dist > R; del dist
+    lab, n = ndimage.label(core)
+    border = np.unique(np.concatenate([lab[0].ravel(), lab[-1].ravel(), lab[:, 0].ravel(), lab[:, -1].ravel(), lab[:, :, 0].ravel(), lab[:, :, -1].ravel()]))
+    border = border[border > 0]
+    outer = np.isin(lab, border); del lab, core
+    # «внешний мир», восстановленный шаром радиуса R: в каналы слива (уже 2R) он не пролезает
+    st = ndimage.generate_binary_structure(3, 1)
+    for _ in range(int(R / pitch) + 1):
+        outer = ndimage.binary_dilation(outer, structure=st) & E
+    rest = E & ~outer
+    # где пустота — полость, а где узкая щель снаружи: «взгляд» по 6 осям на вокселях.
+    # Полость: наружу видно максимум в одну сторону (сквозь слив). Щель между ногами/под очками — минимум в две.
+    esc = np.zeros(rest.shape, np.uint8)
+    for ax in range(3):
+        for flip in (False, True):
+            o = np.flip(occ, ax) if flip else occ
+            seen = np.logical_or.accumulate(o, axis=ax)
+            sl = [slice(None)] * 3; sl[ax] = slice(0, -1); sl2 = [slice(None)] * 3; sl2[ax] = slice(1, None)
+            blocked = np.zeros_like(o); blocked[tuple(sl2)] = seen[tuple(sl)]
+            if flip: blocked = np.flip(blocked, ax)
+            esc += (~blocked).astype(np.uint8); del seen, blocked, o
+    cav = rest & (esc <= 1); del esc
+    print("пустоты без выхода шара: %d вокс., из них полость: %d вокс. (%.0f мм³)" % (rest.sum(), cav.sum(), cav.sum() * pitch ** 3))
+    del rest, outer
+    solid = occ | cav; del cav, E
+    lab2, n2 = ndimage.label(~solid)
+    border2 = np.unique(np.concatenate([lab2[0].ravel(), lab2[-1].ravel(), lab2[:, 0].ravel(), lab2[:, -1].ravel(), lab2[:, :, 0].ravel(), lab2[:, :, -1].ravel()]))
+    solid = np.isin(lab2, border2, invert=True); del lab2
+    solid = ndimage.binary_erosion(solid, iterations=1) | (solid & ndimage.binary_erosion(occ, iterations=1))
+    f = ndimage.gaussian_filter(np.pad(solid, 1).astype(np.float32), 0.8)
+    v, fc, _, _ = measure.marching_cubes(f, 0.5)
+    v = (v - 1) * pitch + lo + pitch / 2
+    out = trimesh.Trimesh(v, fc, process=True)
+    if out.volume < 0: out.invert()
+    return max(out.split(only_watertight=False), key=lambda c: c.area)
+
+
+if a.fill_cavity:
+    m = fill_cavities(m, a.fill_cavity, a.fill_pitch)
+    print("полости залиты: граней %d, объём %.0f мм³" % (len(m.faces), m.volume))
+
 ok = False
 if not a.voxel:
     try:
@@ -105,6 +165,13 @@ if not a.voxel:
 if not ok:
     m = voxel_remesh(m, a.voxel or 0.12)
     man = to_man(m)
+if a.smooth:
+    t0 = to_tm(man); n0 = len(t0.faces)
+    if not (a.fill_cavity or a.voxel):      # после вокселей граней и так много — только сглаживание
+        t0 = t0.subdivide_loop(1)
+    trimesh.smoothing.filter_taubin(t0, lamb=0.5, nu=-0.53, iterations=a.smooth)
+    man = to_man(t0)
+    print("гладкость: %d -> %d граней (Луп x1 + Таубин %d)" % (n0, len(t0.faces), a.smooth))
 comps = sorted(man.decompose(), key=lambda c: -c.volume())
 if len(comps) > 1:
     print("кусков: %d, оставляю крупнейший (остальные объёмом %s мм³)" % (len(comps), [round(c.volume(), 2) for c in comps[1:6]]))
